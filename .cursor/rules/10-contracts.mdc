@@ -1,0 +1,12 @@
+---
+description: NEAR smart contract rules (Rust, near-sdk)
+globs: contracts/**
+alwaysApply: false
+---
+- Use `near-sdk` 5.30.x and `near-contract-standards` 5.30.x. Don't hand-roll NEP-171/177/178/181/199.
+- Use `#[near(contract_state)]`, `#[near]` impl blocks, `#[private]` for callbacks, and `#[callback_result]` for promise results.
+- Require storage deposits for state-growing calls and refund the excess.
+- Use explicit access control: owner, minters, attestor relayers. Add a unit test for every privileged method being rejected for other callers.
+- Never store or accept an EVM/HL address for a trader.
+- Sandbox tests use `near-workspaces`. Build with `cargo near build non-reproducible-wasm`.
+- OutLayer: call `request_execution(code_source, resource_limits, input_data, secrets_ref, response_format, payer_account_id)` on the configured `outlayer_id`, and pin `attestor_code_hash` in the callback.

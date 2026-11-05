@@ -1,0 +1,10 @@
+---
+description: Copier agent rules (Python)
+globs: copier/**
+alwaysApply: false
+---
+- Python 3.11+, uv, pytest, ruff. `policy.py` is pure and fully unit-tested (one test per limit at minimum).
+- `--dry-run` is the default. Live trading requires an explicit `--live` flag and the follower's own HL API wallet key from env.
+- The copier never holds the trader's keys or address. It only consumes TradeEvents from the gateway.
+- Respect HL lot size and tick size rounding. Reject rather than guess.
+- Vendored baseline fleet code lives in `src/copier/vendor/` with a `# baseline:` header.

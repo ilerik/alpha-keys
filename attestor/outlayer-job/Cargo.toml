@@ -1,0 +1,10 @@
+[package]
+name = "outlayer-job"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+pnl-core = { path = "../pnl-core" }
+# outlayer = "*"        # OutLayer SDK (crates.io/crates/outlayer); pin exact version in A-4
+# serde_json = "1"

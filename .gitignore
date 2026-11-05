@@ -1,0 +1,24 @@
+# secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+**/credentials/*.json
+.near-credentials/
+# rust
+target/
+# node
+node_modules/
+.next/
+dist/
+.vercel/
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+# misc
+.DS_Store
+*.log

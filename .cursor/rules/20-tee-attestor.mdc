@@ -1,0 +1,10 @@
+---
+description: TEE / OutLayer job and pnl-core rules
+globs: attestor/**
+alwaysApply: false
+---
+- `pnl-core` is pure: no I/O, no clock, no randomness, deterministic fixed-point output. Native tests must cover every metric.
+- `outlayer-job` targets `wasm32-wasip2`. Input is JSON on stdin and output is JSON on stdout. Secrets come only from env (OutLayer secrets).
+- Output must never include the HL address, raw fills, or anything that identifies the account. Add a test that greps the output for `0x[0-9a-fA-F]{40}`.
+- Keep builds reproducible (pinned toolchain in rust-toolchain.toml, `--locked`), and print the sha256 of the wasm.
+- Scripts that set OutLayer secrets read values from env and must not echo them.

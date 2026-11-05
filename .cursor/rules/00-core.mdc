@@ -1,0 +1,13 @@
+---
+description: Core rules for every change in the Alpha Keys repo
+alwaysApply: true
+---
+- Follow AGENTS.md. Work on one task from docs/TASKS.md per PR and keep PRs small (about 400 lines or fewer, excluding lockfiles and fixtures).
+- Never commit or print secrets: private keys, seed phrases, JWTs, API keys, `.env`, or the hidden trader's Hyperliquid address. Only `.env.example` with names and public testnet values.
+- No mainnet funds in tests or CI. Use fixtures, mocks, near-workspaces sandbox, or testnet.
+- NEAR Intents 1Click calls default to `dry: true`. Live mode needs an explicit `ONECLICK_LIVE=1` and is never automated.
+- Every change ships with tests, and `make check` must pass.
+- If a change touches anything the README Quickstart uses, update the README in the same PR ("do X, see Y" steps).
+- Interfaces are defined in docs/ARCHITECTURE.md. Update it with any interface change.
+- Do not use Shade Agents (deprecated). TEE work goes through OutLayer.
+- Times in docs are written as UTC first, with MSK (UTC+3) in parentheses.

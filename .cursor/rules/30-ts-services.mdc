@@ -1,0 +1,10 @@
+---
+description: TypeScript rules for gateway and web
+globs: gateway/**, web/**
+alwaysApply: false
+---
+- Node 22+, TypeScript strict, ESM. Tests use vitest. Use pnpm workspaces and commit the lockfile.
+- NEAR: use `near-api-js` 7.x for RPC/view calls and `@hot-labs/near-connect` for wallet login in web.
+- 1Click base URL is `https://1click.chaindefuser.com/v0`. Default to `dry: true`. The optional partner JWT goes in the `X-API-Key` header from env and is never sent to the browser.
+- Feed auth uses NEP-413 signed messages, then a short-lived JWT. Return 401 without a session and 403 without a viewing key.
+- Never log request bodies that may contain signatures or tokens. Never expose server env to the client bundle (no `NEXT_PUBLIC_` for secrets).
