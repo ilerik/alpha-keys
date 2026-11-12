@@ -30,7 +30,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </span>
           </header>
           <main>{children}</main>
-          <footer>Record is relayed until a testnet deploy exists.</footer>
+          <footer>The record is relayed from a fixture. Token 0 is a Delayed60 key on alpha-keys.testnet.</footer>
         </div>
         </LoopbackProvider>
       </body>
