@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { GATEWAY } from "../../../lib/demo";
+import { GATEWAY, isLoopbackUrl } from "../../../lib/demo";
 import { accessMessage } from "../../../lib/format";
+import { useLoopback } from "../../loopback";
 
 const ACCOUNT = "demo.alpha-keys.testnet";
 
@@ -21,8 +22,14 @@ export default function FeedPage() {
   const [status, setStatus] = useState<number | null>(null);
   const [lines, setLines] = useState<string[]>([]);
   const [token, setToken] = useState("");
+  const { allowed } = useLoopback();
+
+  function localFeedBlocked(): boolean {
+    return isLoopbackUrl(GATEWAY) && !allowed;
+  }
 
   async function session(): Promise<string> {
+    if (localFeedBlocked()) throw new Error("connect");
     if (token) return token;
     const response = await fetch(`${GATEWAY}/demo/session`, {
       method: "POST",
@@ -35,6 +42,11 @@ export default function FeedPage() {
   }
 
   async function openFeed() {
+    if (localFeedBlocked()) {
+      setStatus(401);
+      setLines([]);
+      return;
+    }
     const bearer = await session();
     const response = await fetch(`${GATEWAY}/feed/alpha-1`, { headers: { authorization: `Bearer ${bearer}` } });
     setStatus(response.status);
@@ -42,6 +54,10 @@ export default function FeedPage() {
   }
 
   async function mint() {
+    if (localFeedBlocked()) {
+      setStatus(401);
+      return;
+    }
     const bearer = await session();
     await fetch(`${GATEWAY}/demo/mint`, { method: "POST", headers: { authorization: `Bearer ${bearer}` } });
     await openFeed();

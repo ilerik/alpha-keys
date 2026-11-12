@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { DEMO_TRADER, GATEWAY } from "../lib/demo";
+import { DEMO_TRADER, GATEWAY, isLoopbackUrl } from "../lib/demo";
 import { usdFromE6 } from "../lib/format";
 import { viewTrader } from "../lib/near";
+import { useLoopback } from "./loopback";
 
 type Trader = typeof DEMO_TRADER;
 
@@ -17,20 +18,22 @@ const BEATS = [
 
 export default function LeaderboardPage() {
   const [traders, setTraders] = useState<Trader[]>([DEMO_TRADER]);
+  const { allowed } = useLoopback();
 
   useEffect(() => {
     const contractId = process.env.NEXT_PUBLIC_CONTRACT_ID;
     const rpcUrl = process.env.NEXT_PUBLIC_NEAR_RPC_URL;
     const chain = contractId && rpcUrl ? viewTrader(rpcUrl, contractId, "alpha-1").catch(() => null) : Promise.resolve(null);
+    const gateway = !isLoopbackUrl(GATEWAY) || allowed ? fetch(`${GATEWAY}/demo/leaderboard`) : Promise.resolve(null);
     Promise.all([
-      fetch(`${GATEWAY}/demo/leaderboard`)
-        .then((response) => (response.ok ? response.json() : Promise.reject(response.status)))
+      gateway
+        .then((response) => (response && response.ok ? response.json() : Promise.reject(response?.status)))
         .catch(() => null),
       chain,
     ]).then(([body]) => {
       if (body?.traders) setTraders(body.traders);
     });
-  }, []);
+  }, [allowed]);
 
   return (
     <>

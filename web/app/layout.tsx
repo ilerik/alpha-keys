@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import "./globals.css";
 import { WalletButton } from "./wallet";
+import { LoopbackProvider } from "./loopback";
 
 export const metadata = {
   title: "Alpha Keys",
@@ -13,6 +14,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body>
         <div className="scan" aria-hidden="true" />
+        <LoopbackProvider>
         <div className="shell">
           <header className="top">
             <Link className="mark" href="/">ALPHA KEYS</Link>
@@ -30,6 +32,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <main>{children}</main>
           <footer>Record is relayed until a testnet deploy exists.</footer>
         </div>
+        </LoopbackProvider>
       </body>
     </html>
   );

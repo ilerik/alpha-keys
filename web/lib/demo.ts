@@ -22,3 +22,13 @@ export const DEMO_TRADER = {
 };
 
 export const GATEWAY = process.env.NEXT_PUBLIC_GATEWAY_URL ?? "http://localhost:8787";
+
+/** A public page must not touch these hosts until the visitor clicks Connect. */
+export function isLoopbackUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname;
+    return host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]";
+  } catch {
+    return false;
+  }
+}

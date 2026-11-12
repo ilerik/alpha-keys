@@ -43,6 +43,8 @@ pub struct Position {
 pub struct AccountState {
     #[serde(rename = "accountValue")]
     pub account_value_e6: i64,
+    /// Spot USDC, in the same e6 units. Withdrawing perps profit to spot is not a loss.
+    pub spot_usdc_e6: i64,
     pub positions: Vec<Position>,
 }
 
@@ -84,12 +86,13 @@ pub fn max_drawdown_bps(equity: &[u64]) -> u32 {
 }
 
 pub fn compute(fills: &[Fill], state: &AccountState) -> Metrics {
+    let equity_now = state.account_value_e6.saturating_add(state.spot_usdc_e6);
     let mut ordered = fills.to_vec();
     ordered.sort_by_key(|fill| (fill.time_ms, fill.coin.clone()));
     let realized: i64 = ordered.iter().map(net_pnl).sum();
     let unrealized: i64 = state.positions.iter().map(|position| position.unrealized_pnl_e6).sum();
     let pnl = realized.saturating_add(unrealized);
-    let base = state.account_value_e6.saturating_sub(unrealized).saturating_sub(realized);
+    let base = equity_now.saturating_sub(unrealized).saturating_sub(realized);
     let mut points: Vec<(u64, i64)> = Vec::new();
     let start = ordered.first().map(|fill| fill.time_ms.saturating_sub(DAY_MS)).unwrap_or(0);
     points.push((start, base));
@@ -98,9 +101,9 @@ pub fn compute(fills: &[Fill], state: &AccountState) -> Metrics {
         running = running.saturating_add(net_pnl(fill));
         points.push((fill.time_ms, base.saturating_add(running)));
     }
-    if points.last().map(|point| point.1) != Some(state.account_value_e6) {
+    if points.last().map(|point| point.1) != Some(equity_now) {
         let end_time = points.last().map(|point| point.0.saturating_add(1)).unwrap_or(0);
-        points.push((end_time, state.account_value_e6));
+        points.push((end_time, equity_now));
     }
     let curve: Vec<u64> = points.iter().map(|(_, equity)| nonneg(*equity)).collect();
     let daily = end_of_day(&points);
@@ -109,8 +112,29 @@ pub fn compute(fills: &[Fill], state: &AccountState) -> Metrics {
         max_dd_bps: max_drawdown_bps(&curve),
         sharpe_e4: sharpe_e4(&daily),
         n_trades: ordered.len() as u32,
-        equity_usd_e6: nonneg(state.account_value_e6),
+        equity_usd_e6: nonneg(equity_now),
     }
+}
+
+pub fn window_ms(window: &str) -> Result<u64, String> {
+    let window = window.trim();
+    if let Some(days) = window.strip_suffix('d') {
+        let count: u64 = days.parse().map_err(|_| format!("bad window {window}"))?;
+        return Ok(count.saturating_mul(DAY_MS));
+    }
+    if let Some(hours) = window.strip_suffix('h') {
+        let count: u64 = hours.parse().map_err(|_| format!("bad window {window}"))?;
+        return Ok(count.saturating_mul(3_600_000));
+    }
+    Err(format!("bad window {window}"))
+}
+
+pub fn fills_in_window(fills: &[Fill], start_ms: u64, now_ms: u64) -> Vec<Fill> {
+    fills
+        .iter()
+        .filter(|fill| fill.time_ms >= start_ms && fill.time_ms <= now_ms)
+        .cloned()
+        .collect()
 }
 
 pub fn fills_from_hl_json(bytes: &[u8]) -> Result<Vec<Fill>, String> {
@@ -139,7 +163,24 @@ pub fn account_from_hl_json(bytes: &[u8]) -> Result<AccountState, String> {
             });
         }
     }
-    Ok(AccountState { account_value_e6: parse_fixed(&as_decimal(account_value)?, 6)?, positions })
+    Ok(AccountState {
+        account_value_e6: parse_fixed(&as_decimal(account_value)?, 6)?,
+        spot_usdc_e6: 0,
+        positions,
+    })
+}
+
+pub fn spot_usdc_e6(bytes: &[u8]) -> Result<i64, String> {
+    let value: Value = serde_json::from_slice(bytes).map_err(|err| err.to_string())?;
+    let mut total = 0i64;
+    if let Some(rows) = value.get("balances").and_then(Value::as_array) {
+        for row in rows {
+            if string_field(row, "coin").unwrap_or_default() == "USDC" {
+                total = total.saturating_add(parse_fixed(&string_field(row, "total")?, 6)?);
+            }
+        }
+    }
+    Ok(total)
 }
 
 pub fn fills_to_hl_json(fills: &[Fill]) -> String {
@@ -382,10 +423,50 @@ mod tests {
     }
 
     #[test]
+    fn spot_usdc_keeps_a_perps_withdrawal_from_looking_like_a_total_loss() {
+        let fills = vec![
+            sample_fill(1_000, 100_000_000),
+            sample_fill(2_000, -10_000_000),
+        ];
+        let state = AccountState {
+            account_value_e6: 0,
+            spot_usdc_e6: 1_000_000_000,
+            positions: Vec::new(),
+        };
+        let metrics = compute(&fills, &state);
+        assert_eq!(metrics.equity_usd_e6, 1_000_000_000);
+        assert!(metrics.max_dd_bps < 10_000, "drawdown {}", metrics.max_dd_bps);
+    }
+
+    #[test]
+    fn window_keeps_only_fills_inside_it() {
+        let fills = vec![sample_fill(1_000, 5_000_000), sample_fill(50_000, 3_000_000)];
+        let kept = fills_in_window(&fills, 10_000, 60_000);
+        assert_eq!(kept.len(), 1);
+        assert_eq!(kept[0].time_ms, 50_000);
+        assert_eq!(window_ms("7d").unwrap(), 7 * DAY_MS);
+        assert_eq!(window_ms("24h").unwrap(), DAY_MS);
+    }
+
+    #[test]
     fn parses_clearinghouse_state() {
         let raw = include_bytes!("../../../fixtures/fills/sample-account.json");
         let account = account_from_hl_json(raw).unwrap();
         assert_eq!(account.account_value_e6, 1_008_000_000);
         assert!(account.positions.is_empty());
+    }
+
+    fn sample_fill(time_ms: u64, closed_pnl_e6: i64) -> Fill {
+        Fill {
+            coin: "ETH".into(),
+            px_e6: 100_000_000,
+            px_display: "100".into(),
+            sz_e8: 100_000_000,
+            side: Side::Sell,
+            time_ms,
+            closed_pnl_e6,
+            fee_e6: 0,
+            start_position_e8: 0,
+        }
     }
 }

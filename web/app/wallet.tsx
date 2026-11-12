@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { useLoopback } from "./loopback";
 
 export function WalletButton() {
+  const { allow } = useLoopback();
   const [account, setAccount] = useState("");
   const [error, setError] = useState("");
 
   async function connect() {
     setError("");
+    allow();
     try {
       const { NearConnector } = await import("@hot-labs/near-connect");
       const connector = new NearConnector({ network: "testnet" });

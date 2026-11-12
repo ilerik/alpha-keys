@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DEMO_TRADER, GATEWAY } from "../../../lib/demo";
+import { DEMO_TRADER, GATEWAY, isLoopbackUrl } from "../../../lib/demo";
 import { originStable, requestDryQuote, type QuoteView } from "../../../lib/oneclick";
+import { useLoopback } from "../../loopback";
 
 interface DecisionLine {
   type: string;
@@ -14,13 +15,15 @@ export default function TraderPage() {
   const [quote, setQuote] = useState<QuoteView | null>(null);
   const [busy, setBusy] = useState(false);
   const [decisions, setDecisions] = useState<DecisionLine[]>([]);
+  const { allowed } = useLoopback();
 
   useEffect(() => {
+    if (isLoopbackUrl(GATEWAY) && !allowed) return;
     fetch(`${GATEWAY}/demo/copier`)
       .then((response) => (response.ok ? response.json() : Promise.reject(response.status)))
       .then((body: { decisions: DecisionLine[] }) => setDecisions(body.decisions))
       .catch(() => setDecisions([]));
-  }, []);
+  }, [allowed]);
 
   async function dryQuote() {
     setBusy(true);

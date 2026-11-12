@@ -71,7 +71,7 @@ Both are one WASM binary with an `action` field in its input, or two projects if
 **3a. PnL attestor** (`action: "pnl"`)
 - Input (public): `{ "action":"pnl", "trader_id":"alpha-1", "window":"7d", "now_ms": 1731000000000 }`
 - Secret (env, sealed via OutLayer secrets, access whitelisted to our project or contract): `HL_ADDRESS`
-- Work: HTTPS POST to `https://api.hyperliquid.xyz/info` with `userFillsByTime` and `clearinghouseState`, then `pnl-core::compute(fills, state)`. This build's worker returns an error from the live fetch. `{"fixture":true}` uses the committed fills instead, which is what the tests run.
+- Work: HTTPS POST to `https://api.hyperliquid.xyz/info` with `userFillsByTime` (`startTime` = `now_ms` minus the window), `clearinghouseState`, and `spotClearinghouseState`. Equity is perps account value plus spot USDC, so a withdrawal from perps to spot is not a 100% drawdown. Then `pnl-core::compute` on the fills inside the window. This build's worker returns an error from the live fetch. `{"fixture":true}` uses the committed fills instead, which is what the tests run.
 - Output (stdout JSON): `{ "pnl_usd_e6", "max_dd_bps", "sharpe_e4", "n_trades", "equity_usd_e6" }`. The output must not contain the address or the raw fills.
 - Trust: OutLayer's worker runs inside Intel TDX and binds the WASM sha256, input hash, and output. The contract only accepts the callback from `outlayer_id` and pins `attestor_code_hash`. See https://app.outlayer.ai/docs/getting-started and WORKER_ATTESTATION.md in https://github.com/out-layer/outlayer.
 

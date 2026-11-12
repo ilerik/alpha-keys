@@ -1,7 +1,9 @@
 //! OutLayer job logic, tested with a fake HTTP transport.
 //! The live worker is the only place that should set `HL_ADDRESS`.
 use feed_core::{sanitize, Tier, TradeEvent};
-use pnl_core::{account_from_hl_json, compute, fills_from_hl_json, Metrics};
+use pnl_core::{
+    account_from_hl_json, compute, fills_from_hl_json, fills_in_window, spot_usdc_e6, window_ms, Metrics,
+};
 use serde_json::{json, Value};
 
 pub trait Fetch {
@@ -24,20 +26,38 @@ pub fn execute(input: &str, hl_address: Option<&str>, fetch: &dyn Fetch) -> Resu
         return Err("missing HL_ADDRESS".into());
     }
     let address = hl_address.unwrap();
-    let (fills_json, account_json) = if request.get("fixture").and_then(Value::as_bool).unwrap_or(false) {
+    let fixture = request.get("fixture").and_then(Value::as_bool).unwrap_or(false);
+    let (fills_json, account) = if fixture {
         (
             include_str!("../../../fixtures/fills/sample.json").to_string(),
-            include_str!("../../../fixtures/fills/sample-account.json").to_string(),
+            account_from_hl_json(include_str!("../../../fixtures/fills/sample-account.json").as_bytes())?,
         )
-    } else {
+    } else if action == "feed" {
         let body = json!({ "type": "userFillsByTime", "user": address }).to_string();
         let fills_json = fetch.post_info(&body)?;
         let state_body = json!({ "type": "clearinghouseState", "user": address }).to_string();
-        let account_json = fetch.post_info(&state_body)?;
-        (fills_json, account_json)
+        let account = account_from_hl_json(fetch.post_info(&state_body)?.as_bytes())?;
+        (fills_json, account)
+    } else {
+        let now_ms = request.get("now_ms").and_then(Value::as_u64).ok_or("missing now_ms")?;
+        let window = request.get("window").and_then(Value::as_str).unwrap_or("7d");
+        let start_ms = now_ms.saturating_sub(window_ms(window)?);
+        let body = json!({ "type": "userFillsByTime", "user": address, "startTime": start_ms }).to_string();
+        let fills_json = fetch.post_info(&body)?;
+        let state_body = json!({ "type": "clearinghouseState", "user": address }).to_string();
+        let mut account = account_from_hl_json(fetch.post_info(&state_body)?.as_bytes())?;
+        let spot_body = json!({ "type": "spotClearinghouseState", "user": address }).to_string();
+        account.spot_usdc_e6 = spot_usdc_e6(fetch.post_info(&spot_body)?.as_bytes())?;
+        (fills_json, account)
     };
-    let fills = fills_from_hl_json(fills_json.as_bytes())?;
-    let account = account_from_hl_json(account_json.as_bytes())?;
+    let mut fills = fills_from_hl_json(fills_json.as_bytes())?;
+    if action != "feed" {
+        if let Some(now_ms) = request.get("now_ms").and_then(Value::as_u64) {
+            let window = request.get("window").and_then(Value::as_str).unwrap_or("7d");
+            let start_ms = now_ms.saturating_sub(window_ms(window)?);
+            fills = fills_in_window(&fills, start_ms, now_ms);
+        }
+    }
     let output = match action {
         "feed" => {
             let now_ms = request.get("now_ms").and_then(Value::as_u64).unwrap_or(0);
@@ -100,6 +120,40 @@ mod tests {
         )
         .unwrap();
         assert!(output.contains("8000000") || output.contains("8000000"));
+        assert!(!output.contains("hidden-account"));
+    }
+
+    struct RecordingFetch {
+        seen: std::cell::RefCell<String>,
+    }
+
+    impl Fetch for RecordingFetch {
+        fn post_info(&self, body: &str) -> Result<String, String> {
+            self.seen.borrow_mut().push_str(body);
+            self.seen.borrow_mut().push('\n');
+            if body.contains("spotClearinghouseState") {
+                Ok(r#"{"balances":[]}"#.into())
+            } else if body.contains("clearinghouseState") {
+                Ok(include_str!("../../../fixtures/fills/sample-account.json").into())
+            } else {
+                Ok(include_str!("../../../fixtures/fills/sample.json").into())
+            }
+        }
+    }
+
+    #[test]
+    fn live_fills_request_uses_the_window_start() {
+        let fetch = RecordingFetch { seen: std::cell::RefCell::new(String::new()) };
+        let output = execute(
+            r#"{"action":"pnl","trader_id":"alpha-1","window":"7d","now_ms":1731200000000}"#,
+            Some("hidden-account"),
+            &fetch,
+        )
+        .unwrap();
+        let seen = fetch.seen.borrow();
+        let body: Value = serde_json::from_str(seen.lines().next().unwrap()).unwrap();
+        assert_eq!(body["type"], "userFillsByTime");
+        assert_eq!(body["startTime"], 1731200000000u64 - 7 * 86_400_000);
         assert!(!output.contains("hidden-account"));
     }
 
