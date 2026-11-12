@@ -1,6 +1,6 @@
 # Demo video outline
 
-2–3 minutes. Record the local Quickstart. The hosted Vercel URL, once it exists, can open the leaderboard and the verify check. The feed moment is localhost.
+2-3 minutes. Record the local Quickstart. The hosted Vercel URL, once it exists, can open the leaderboard and the verify check. The feed moment is localhost.
 
 1. Problem. One sentence: the account stays hidden, the track record is public, the feed is a key. Show the leaderboard: Alpha One, PnL 8 USD, drawdown 10 bps, Relayed badge.
 2. Dry quote. Open Alpha One. Click **Buy key → Pay from another chain**. Show `dry: true`, an `amountOut`, and `depositAddress: null`.

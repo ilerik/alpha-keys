@@ -67,7 +67,7 @@ Granular tasks with acceptance criteria are in [docs/TASKS.md](docs/TASKS.md); t
 - Done-check: a fresh-clone run in a clean container passes every Quickstart step with no secrets set.
 
 ### D8: Fri Nov 13: video, post draft, go public
-- Tasks: V-1 to V-4. Record a 2–3 min video: problem, attested leaderboard, buy key, feed unlock, copy fires, verify attestation. Draft the X post. Run a secrets scan over the **full git history** (gitleaks or trufflehog). Tag `hackathon-submission` (provisional). **Make the repo public** (Ilya does this himself).
+- Tasks: V-1 to V-4. Record a 2-3 min video: problem, attested leaderboard, buy key, feed unlock, copy fires, verify attestation. Draft the X post. Run a secrets scan over the **full git history** (gitleaks or trufflehog). Tag `hackathon-submission` (provisional). **Make the repo public** (Ilya does this himself).
 - Deliverable: video file, post draft, public clean repo.
 - Done-check: `gh repo view --json visibility` returns PUBLIC and the history scan is clean.
 
@@ -87,11 +87,11 @@ Granular tasks with acceptance criteria are in [docs/TASKS.md](docs/TASKS.md); t
 
 **Partial GO:** OutLayer runs, but the on-chain yield/resume path fails. Use the OutLayer **HTTPS API** instead: a relayer posts the result plus the OutLayer attestation to `submit_pnl`, and the contract accepts it only from the registered attestor key. Write down the weaker trust model.
 
-**NO-GO:** pivot to **"Never-Liquidated guardian"**. It reuses D1–D2 plumbing (contract skeleton, HL client, `pnl-core` risk math, 1Click dry quotes):
+**NO-GO:** pivot to **"Never-Liquidated guardian"**. It reuses D1-D2 plumbing (contract skeleton, HL client, `pnl-core` risk math, 1Click dry quotes):
 - Contract: replace the NFT key with a **Guardian Policy NFT** (NEP-171, so the `nfts` track still fits) that encodes the bands (min margin ratio, max top-up per day, allowed source chains).
 - Agent: a monitor that reads the HL margin ratio (and optionally an Aave or Rhea health factor). When a band is crossed, it plans a top-up via a 1Click quote from the cheapest source chain (`dry: true` for judges, one tiny real top-up if allowed).
 - A simulation mode that replays a historical crash against a fake position.
-- Tracks become `defi`, `security`, `agents` (+ `nfts`). Days D4–D9 keep the same shape: D4 is the planner, D5 the executor, D6 the UI, D7 the hardening.
+- Tracks become `defi`, `security`, `agents` (+ `nfts`). Days D4-D9 keep the same shape: D4 is the planner, D5 the executor, D6 the UI, D7 the hardening.
 - Record the decision and its reason in `docs/DECISIONS.md` that night.
 
 ---
@@ -102,10 +102,10 @@ Granular tasks with acceptance criteria are in [docs/TASKS.md](docs/TASKS.md); t
 - [ ] README: what it is, the problem, numbered **"do X, see Y"** Quickstart, NEAR tech used, libraries, AI assistance, pre-hackathon disclosure with `pre-hackathon` and `hackathon-submission` tags and a compare link.
 - [ ] Quickstart passes from a fresh clone with **no secrets and no funds** (dry quotes, testnet).
 - [ ] Hosted demo up (Vercel) through Nov 25.
-- [ ] Demo video, 2–3 min.
+- [ ] Demo video, 2-3 min.
 - [ ] X post by Ilya: "built at NEAR HACKATHON", @NEARProtocol, #NEARHackathon, video attached.
 - [ ] Full-history secrets scan is clean; `.env` was never committed.
-- [ ] Submission fields: projectName "Alpha Keys", leadName, email, size `1`, tracks `["defi","privacy","nfts","agents"]`, nearAddress (mainnet, lowercase), projectUrl (repo), demoUrl (X post), idea (20–2000 chars), consent=true, a requestId UUID reused on retry, **no `website` field**.
+- [ ] Submission fields: projectName "Alpha Keys", leadName, email, size `1`, tracks `["defi","privacy","nfts","agents"]`, nearAddress (mainnet, lowercase), projectUrl (repo), demoUrl (X post), idea (20-2000 chars), consent=true, a requestId UUID reused on retry, **no `website` field**.
 - [ ] Submit **once**. Corrections go through nearhackathon.com/request-changes.
 - [ ] If Ilya submits a second project, each README names the other.
 

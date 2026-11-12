@@ -1,5 +1,7 @@
 # Alpha Keys: private copy-trading with attested PnL and sellable viewing keys
 
+The TEE is the design. This demo's PnL record is relayed from a fixture, not a live enclave callback.
+
 Live demo, no login: https://alpha-keys.vercel.app/
 
 > Status: judge path is the Quickstart below. It runs from a fresh clone with no secrets and no funds. Submit as soon as this repo is public. Near Hunt only lists the project after the form is sent.
@@ -84,7 +86,7 @@ No funds, no mainnet account, and no secrets. 1Click quotes are `dry: true`. The
 8. Open **Feed**, click **Open feed**. You see `403 no viewing key`. Click **Mint demo key**. You see `Trades are streaming.` and ETH events.
 9. Open **Verify**. You see the relayed record. Click **Check record**. You see `VERIFIED` and digest `c77fa93b9c667bfefa078b647e55333a42266d4f0b2dc000a45500e0b52881d7`. Click **Flip one byte**. You see `NOT VERIFIED`.
 
-Hosted demo: https://alpha-keys.vercel.app/ — kept up until at least Nov 25, 2026. Leaderboard, Alpha One, and Verify load with no login. The feed stays on localhost, so the public site does not call it until Connect is clicked. Demo video: _TBD (X post)._
+Hosted demo: https://alpha-keys.vercel.app/ - kept up until at least Nov 25, 2026. Leaderboard, Alpha One, and Verify load with no login. The feed stays on localhost, so the public site does not call it until Connect is clicked. Demo video: _TBD (X post)._
 
 ## Pre-hackathon code disclosure
 

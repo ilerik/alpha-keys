@@ -165,9 +165,9 @@ Legend: 🔴 critical path · 🟡 important · ⚪ stretch. `deps:` lists tasks
 **H-4 🔴 Final README Quickstart**: every step is "do X, see Y" and was checked from a fresh clone in Docker (`scripts/fresh-clone-check.sh`).
 **H-5 🟡 Threat-model doc update** with the measured delay/jitter defaults.
 
-## M8: Ship (D8–D9, Fri Nov 13 to Sat Nov 14)
+## M8: Ship (D8-D9, Fri Nov 13 to Sat Nov 14)
 
-**V-1 🔴 Demo video** (2–3 min) · **V-2 🔴 X post draft** (Ilya posts) · **V-3 🔴 Full-history secrets scan plus go public** (Ilya flips visibility) · **V-4 🔴 Submission** by Sat Nov 14 17:00 UTC (20:00 MSK), receipt saved.
+**V-1 🔴 Demo video** (2-3 min) · **V-2 🔴 X post draft** (Ilya posts) · **V-3 🔴 Full-history secrets scan plus go public** (Ilya flips visibility) · **V-4 🔴 Submission** by Sat Nov 14 17:00 UTC (20:00 MSK), receipt saved.
 
 ---
 
