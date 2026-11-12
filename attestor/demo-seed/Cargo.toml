@@ -1,0 +1,10 @@
+[package]
+name = "demo-seed"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+feed-core = { path = "../feed-core" }
+pnl-core = { path = "../pnl-core" }
+serde_json = "1"

@@ -1,6 +1,6 @@
 # Alpha Keys: private copy-trading with attested PnL and sellable viewing keys
 
-> Status: **work in progress** for NEAR HACKATHON (Nov 2026). The Quickstart below is a placeholder. Every step gets filled in and checked from a fresh clone before submission. See [PLAN.md](PLAN.md).
+> Status: judge path is the Quickstart below. It runs from a fresh clone with no secrets and no funds. Submit as soon as this repo is public. Near Hunt only lists the project after the form is sent.
 
 ## What it is
 
@@ -64,31 +64,31 @@ Not used: Shade Agents (deprecated as standalone tooling since 2026-04-19).
 
 ## Tracks
 
-`defi`, `privacy`, `nfts`, `agents` (all that fit; see PLAN.md open questions on multi-track prizes).
+`nfts`, `privacy`, `defi`.
 
-## Quickstart for judges (placeholder, finalized on D7)
+`security` stays off this submission. The published record is relayed, not a live enclave proof. `agents` stays off: the copier dry-run does not spend.
 
-No funds or mainnet accounts are needed. Every 1Click call uses `dry: true`, and the contract is on **testnet**.
+## Quickstart for judges
 
-1. `git clone <repo> && cd alpha-keys && cp .env.example .env`. You see a `.env` with only public testnet values filled in.
-2. `make check`. You see contract unit tests, `pnl-core` tests, gateway tests, and copier tests all pass.
-3. `make demo-seed`. This replays a recorded fills fixture through `pnl-core`, and you see a PnL report (PnL, max drawdown, Sharpe) printed as JSON.
-4. `near view <CONTRACT_ID> get_trader '{"trader_id":"alpha-1"}' --networkId testnet`. You see the trader record with its latest attested PnL and the OutLayer request id.
-5. `pnpm --filter web dev`, then open http://localhost:3000. You see the leaderboard with an "Attested" badge per trader.
-6. Click **Buy key → Pay from another chain**. You see a 1Click **dry** quote (amount in, deposit address omitted because the quote is dry).
-7. Click **Open feed** without a key. You see `403 no viewing key`. After **Mint demo key** (testnet faucet flow), you see trades streaming with a 60 s delay.
-8. `pnpm --filter copier dry-run` (or `uv run copier --dry-run`). You see the copier size each mirrored order and reject the ones that break the follower's caps, with the reason logged.
+No funds, no mainnet account, and no secrets. 1Click quotes are `dry: true`. The PnL record in the demo is **relayed** from a fixture (`submit_pnl`), not a live TEE callback. The contract method `request_pnl_update` is there for a later OutLayer project.
 
-Hosted demo: _TBD (Vercel), kept up until at least Nov 25, 2026._ Demo video: _TBD (X post)._
+1. `git clone <repo> && cd alpha-keys && cp .env.example .env`. You see a `.env` whose filled-in values are public URLs and `DEMO_FEED=1`. Secret fields are empty.
+2. `make check`. You see Rust tests, gateway tests, web tests, copier tests, and `leak check: no address-shaped hex`.
+3. `make demo-seed`. You see metrics JSON (`pnl_usd_e6` 8000000, `max_dd_bps` 10, `sharpe_e4` 108098), then JSON lines: two orders and one `coin_not_allowed:DOGE` rejection.
+4. The same metrics are what `submit_pnl` stored on `alpha-keys.testnet`. The transaction is `6uDLJJ5s9URhR79Gt6P97r9p54HPdgSEWWdgEuYpyekF`. Token `0` is a Delayed60 key. Judges do not deploy.
+5. In one terminal, `pnpm --filter gateway start`. You see `gateway listening on 8787 demo=true`.
+6. In another, `pnpm --filter web dev`, then open http://localhost:3000. You see Alpha One with PnL 8 USD, drawdown 10 bps, and a Relayed badge.
+7. Open **Alpha One** and click **Buy key → Pay from another chain**. You see a dry quote for 5 Ethereum USDT into NEAR USDC: `dry` true, `amountOut` filled in, and `depositAddress` null.
+8. Open **Feed**, click **Open feed**. You see `403 no viewing key`. Click **Mint demo key**. You see `Trades are streaming.` and ETH events.
+9. Open **Verify**. You see the relayed record. Click **Check record**. You see `VERIFIED` and digest `c77fa93b9c667bfefa078b647e55333a42266d4f0b2dc000a45500e0b52881d7`. Click **Flip one byte**. You see `NOT VERIFIED`.
+
+Hosted demo: _TBD (Vercel), kept up until at least Nov 25, 2026. The public site shows the leaderboard and the verify check. Feed 403 and unlock stay on localhost, because the gateway is not deployed._ Demo video: _TBD (X post)._
 
 ## Pre-hackathon code disclosure
 
 Only NEAR work done since **2026-10-19** is judged.
 
-- **Reused baseline:** parts of my existing Hyperliquid bot fleet (HL REST/WebSocket client, fill/position parsing, order placement and sizing helpers). They are copied into `copier/` and `attestor/pnl-core` under `vendor/` or marked `// baseline:` headers, and listed here once imported:
-  - _TBD: file list + original repo/commit_
-- The first commit that imports baseline code is tagged `pre-hackathon`. The submission is tagged `hackathon-submission`. The diff link will go here: `compare/pre-hackathon...hackathon-submission`.
-- Everything under `contracts/`, `attestor/outlayer-job`, `gateway/`, and `web/`, plus all NEAR Intents and OutLayer integration code, is new work for this hackathon.
+No code from before that date was imported. There is no `vendor/` tree and no `baseline:` header. There is no `pre-hackathon` tag. Everything in this repo is new work for this hackathon.
 
 ## Libraries and AI assistance
 
@@ -98,7 +98,10 @@ Libraries are listed per package (`Cargo.toml`, `package.json`, `pyproject.toml`
 
 - Hyperliquid trades are public on its order book. A determined key holder could try to fingerprint the hidden account by matching copied trades to public fills. Delay, size jitter, and tiering reduce this risk but don't remove it. See [docs/ARCHITECTURE.md#threat-model](docs/ARCHITECTURE.md#threat-model).
 - The viewing key is an **app-layer** access right enforced by the TEE job. It isn't a native Confidential Intents viewing key; none is public yet.
-- NEAR Intents has no testnet. The demo uses `dry: true` quotes, plus at most a few tiny mainnet transfers made by the author.
+- NEAR Intents has no testnet. The demo uses `dry: true` quotes. No live 1Click payment is part of the judge path.
+- The PnL record on `alpha-keys.testnet` is relayed from a fixture (`submit_pnl`, tx `6uDLJJ5s9URhR79Gt6P97r9p54HPdgSEWWdgEuYpyekF`). It is not a live enclave callback.
+- Token `0` is a Delayed60 NEP-171 key owned by `alpha-keys.testnet`. The feed's Mint demo key button is still a gateway session, not that on-chain mint.
+- The hosted site does not run the feed gateway. A remote visitor sees the leaderboard and the verify check. The 403-then-stream moment is localhost and the video.
 
 ## License
 

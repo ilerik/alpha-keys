@@ -1,0 +1,22 @@
+[
+  {
+    "coin": "ETH",
+    "px": "100",
+    "sz": "1",
+    "side": "B",
+    "time": 1731027600000,
+    "closedPnl": "0",
+    "fee": "1",
+    "startPosition": "0"
+  },
+  {
+    "coin": "ETH",
+    "px": "110",
+    "sz": "1",
+    "side": "A",
+    "time": 1731114000000,
+    "closedPnl": "10",
+    "fee": "1",
+    "startPosition": "1"
+  }
+]

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alpha-keys.local/schemas/trade-event.json",
+  "title": "TradeEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["traderId", "seq", "tsMs", "coin", "side", "sizeBucket", "px", "reduceOnly", "kind"],
+  "properties": {
+    "traderId": { "type": "string" },
+    "seq": { "type": "integer", "minimum": 1 },
+    "tsMs": { "type": "integer", "minimum": 0 },
+    "coin": { "type": "string" },
+    "side": { "enum": ["B", "A"] },
+    "sizeBucket": { "enum": ["0.01", "0.1", "1", "10", "10+"] },
+    "px": { "type": "string" },
+    "reduceOnly": { "type": "boolean" },
+    "kind": { "enum": ["open", "add", "reduce", "close"] }
+  }
+}

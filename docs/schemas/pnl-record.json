@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alpha-keys.local/schemas/pnl-record.json",
+  "title": "PnlMetrics",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["pnl_usd_e6", "max_dd_bps", "sharpe_e4", "n_trades", "equity_usd_e6"],
+  "properties": {
+    "pnl_usd_e6": { "type": "integer" },
+    "max_dd_bps": { "type": "integer", "minimum": 0, "maximum": 10000 },
+    "sharpe_e4": { "type": "integer" },
+    "n_trades": { "type": "integer", "minimum": 0 },
+    "equity_usd_e6": { "type": "integer", "minimum": 0 }
+  }
+}

@@ -1,6 +1,12 @@
 [workspace]
 resolver = "2"
-members = ["contracts/alpha-keys", "attestor/pnl-core", "attestor/outlayer-job"]
+members = [
+    "contracts/alpha-keys",
+    "attestor/pnl-core",
+    "attestor/feed-core",
+    "attestor/outlayer-job",
+    "attestor/demo-seed",
+]
 
 [workspace.package]
 edition = "2021"

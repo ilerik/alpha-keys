@@ -152,7 +152,7 @@ Legend: 🔴 critical path · 🟡 important · ⚪ stretch. `deps:` lists tasks
 **W-2 🔴 Leaderboard**: `list_traders` plus the latest `PnlRecord`, an Attested badge linking to the explorer tx and `code_hash`. AC: renders from testnet.
 **W-3 🔴 Trader page plus buy**: tiers, NEAR buy, any-chain buy (dry quote panel), "Mint demo key" (testnet). AC: each button is wired; the dry quote is shown.
 **W-4 🔴 Feed page**: SSE consumer; shows 403 nicely. AC: holder vs non-holder demo.
-**W-5 🟡 Verify page**: shows the record, the WASM sha256, and how to reproduce the hash (`sha256sum` of the release asset), plus OutLayer attestation links. AC: the steps work.
+**W-5 🟡 Verify page**: shows the relayed record, the command that reproduces the metrics, and a flip-one-byte control. AC: Check record shows VERIFIED and digest `c77fa93b9c667bfefa078b647e55333a42266d4f0b2dc000a45500e0b52881d7`; Flip one byte shows NOT VERIFIED.
 **W-6 🔴 Deploy to Vercel**: env from the dashboard only. AC: the public URL works in an incognito window.
 
 ---

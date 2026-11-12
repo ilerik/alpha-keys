@@ -1,0 +1,2 @@
+{"traderId":"alpha-1","seq":1,"tsMs":1731027598057,"coin":"ETH","side":"B","sizeBucket":"1","px":"100","reduceOnly":false,"kind":"open"}
+{"traderId":"alpha-1","seq":2,"tsMs":1731113998057,"coin":"ETH","side":"A","sizeBucket":"1","px":"110","reduceOnly":true,"kind":"close"}

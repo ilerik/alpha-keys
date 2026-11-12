@@ -1,0 +1,16 @@
+---
+description: Quality-gate loop for every change
+alwaysApply: true
+---
+
+# Quality gates
+
+Follow `.cursor/skills/ai-agent-code-quality-gates/SKILL.md`. The Binding section wins over the generic notes.
+
+- After a code change, run `make check`, read the failures, and fix them before calling the work done.
+- Formatting, lint, and spelling belong to a gate. If the gate is missing, add it with a baseline of current violations. Leave review comments for layer boundaries, the privacy invariant, and business rules.
+- Keep business logic in `contracts/alpha-keys`, `attestor/pnl-core`, and `copier` policy. The gateway, OutLayer job, and web app call those layers.
+- Specify an interface in `docs/ARCHITECTURE.md` before writing the handler. Use `near-sdk` and `near-contract-standards` for NEAR boilerplate.
+- `make check` is the only task runner. A new checker is adopted only once it runs from `make check` or CI.
+- Parallel work uses a git worktree. Do not `git switch` or `git checkout` another branch in the main checkout.
+- A new strict check records existing violations in a baseline and fails only new ones.

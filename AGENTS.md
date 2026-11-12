@@ -25,9 +25,19 @@ Read this file, then PLAN.md, docs/ARCHITECTURE.md, and the task you were given 
 - Package managers: cargo workspace at the root, pnpm workspace (`gateway`, `web`), uv for `copier`.
 
 ## Commands
-- `make check`: all tests and linters.
+- `make check`: the fast quality gate (tests, and linters once they are wired). Run it after every change and fix failures before calling the work done.
 - `make demo-seed`: offline simulation (after H-3).
 - `cargo near build non-reproducible-wasm` (in `contracts/alpha-keys`).
+
+## Quality gates
+Adopted from `.cursor/skills/ai-agent-code-quality-gates/SKILL.md`. Follow that skill's Binding section.
+
+1. `make check` is the only task runner. Do not add a second one.
+2. Formatting and lint are gate failures, not review comments. A new strict check starts from a baseline of current violations and fails only new ones.
+3. Business logic stays in the contract, `attestor/pnl-core`, and `copier` policy. Other packages call those layers.
+4. Design the interface in `docs/ARCHITECTURE.md` before the handler. Use `near-sdk` and `near-contract-standards` instead of hand-rolled NEAR boilerplate.
+5. There is no SQL database. Contract tests use `near-workspaces`. External calls stay on fixtures or `dry: true`.
+6. Never `git switch` or `git checkout` another branch in the main checkout. Parallel work uses a git worktree.
 
 ## Before opening a PR
 - [ ] `make check` passes

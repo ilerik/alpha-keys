@@ -1,0 +1,9 @@
+{
+  "quote": {
+    "amountIn": "5000000",
+    "amountInFormatted": "5.0",
+    "amountOut": "4994155",
+    "amountOutFormatted": "4.994155",
+    "depositAddress": "not-shown-when-dry"
+  }
+}

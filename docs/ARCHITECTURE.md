@@ -7,7 +7,8 @@ Times are written as UTC (MSK). This document describes the target design. Stubs
 | # | Component | Path | Stack (recommended, versions checked 2026-11-05) |
 |---|---|---|---|
 | 1 | NEAR contract `alpha-keys` | `contracts/alpha-keys` | Rust, `near-sdk` **5.30.0**, `near-contract-standards` **5.30.0**, build with `cargo-near` **0.22.x**, sandbox tests with `near-workspaces` **0.24.x** |
-| 2 | PnL core library | `attestor/pnl-core` | Pure Rust, `no I/O`, compiles to native and `wasm32-wasip2` |
+| 2 | PnL core library | `attestor/pnl-core` | Pure Rust, no I/O. Fixed-point metrics | 
+| 2b | Feed sanitizer | `attestor/feed-core` | Pure Rust. Delay, size buckets, per-subscriber jitter. Depends only on `pnl-core` |
 | 3 | TEE jobs (PnL attestor + feed) | `attestor/outlayer-job` | Rust → `wasm32-wasip2`, `outlayer` crate (SDK), deployed via `outlayer upload/deploy` |
 | 4 | Feed gateway | `gateway` | TypeScript, Node 22+, Hono (HTTP + SSE), `near-api-js` **7.x** for view calls, NEP-413 verification |
 | 5 | Copier agent | `copier` | Python 3.11+ with `uv`, reuses the baseline HL fleet client (or `hyperliquid-python-sdk`); pure policy module |
@@ -70,21 +71,22 @@ Both are one WASM binary with an `action` field in its input, or two projects if
 **3a. PnL attestor** (`action: "pnl"`)
 - Input (public): `{ "action":"pnl", "trader_id":"alpha-1", "window":"7d", "now_ms": 1731000000000 }`
 - Secret (env, sealed via OutLayer secrets, access whitelisted to our project or contract): `HL_ADDRESS`
-- Work: HTTPS POST to `https://api.hyperliquid.xyz/info` with `{"type":"userFillsByTime",...}` and `{"type":"clearinghouseState",...}`, then `pnl-core::compute(fills, state, window)`.
-- Output (stdout JSON, ≤ a few KB): `{ "trader_id", "window", "pnl_usd_e6", "max_dd_bps", "sharpe_e4", "n_trades", "equity_usd_e6", "input_hash" }`. The output **must not** contain the address, fills, or anything that identifies the account.
+- Work: HTTPS POST to `https://api.hyperliquid.xyz/info` with `userFillsByTime` and `clearinghouseState`, then `pnl-core::compute(fills, state)`. This build's worker returns an error from the live fetch. `{"fixture":true}` uses the committed fills instead, which is what the tests run.
+- Output (stdout JSON): `{ "pnl_usd_e6", "max_dd_bps", "sharpe_e4", "n_trades", "equity_usd_e6" }`. The output must not contain the address or the raw fills.
 - Trust: OutLayer's worker runs inside Intel TDX and binds the WASM sha256, input hash, and output. The contract only accepts the callback from `outlayer_id` and pins `attestor_code_hash`. See https://app.outlayer.ai/docs/getting-started and WORKER_ATTESTATION.md in https://github.com/out-layer/outlayer.
 
 **3b. Feed job** (`action: "feed"`, called over the HTTPS API by the gateway)
 - Input: `{ "action":"feed", "trader_id", "tier":"Live|Delayed60", "since_ms" }`
-- Work: fetch recent fills for the sealed address, drop fills newer than `now - delay(tier)`, apply **size jitter** (±x% bucketed, so copiers still size correctly) and **time jitter**, and return sanitized `TradeEvent[]` (coin, side, size bucket, price rounded to tick, ts rounded).
+- Work: `feed-core::sanitize` drops fills newer than `now - delay(tier)`, replaces size with a bucket (`0.01`, `0.1`, `1`, `10`, `10+`), rounds time down to 5 seconds, and subtracts a deterministic per-subscriber jitter so a leaked stream can be told apart. The gateway and `make demo-seed` call this library. The job does too. None of them learn the address from the library.
 - The gateway checks entitlement before calling. For defense in depth the job can re-check `has_access` itself through NEAR RPC.
 
 ## 4. Feed gateway
 
-- `POST /auth/challenge` → `{ nonce }`. `POST /auth/verify` takes a NEP-413 signed message `{ accountId, publicKey, signature, message, nonce, recipient:"alpha-keys" }`, verifies the signature and that the key belongs to the account (`view_access_key`), and returns a short-lived session JWT. The gateway's JWT secret comes from env and is never committed.
-- `GET /feed/:traderId` (SSE). Checks `has_access(account, trader)` (cached ≤ 30 s), then streams `TradeEvent`s from the per-tier cache. It returns **403** `no viewing key` when access is missing and **401** without a session.
-- The poller calls the feed job per trader and tier every N seconds and fans results out to subscribers. It **never sees the HL address**.
-- `minter.ts`: for each pending purchase `{ depositAddress, trader_id, tier, receiver }`, poll `GET https://1click.chaindefuser.com/v0/status?depositAddress=…`. On `SUCCESS`, call `mint_key`. On `REFUNDED`/`FAILED`, mark the purchase failed.
+- `POST /auth/challenge` → `{ nonce }`. `POST /auth/verify` takes a NEP-413 signed message `{ accountId, publicKey, signature, message, nonce, recipient:"alpha-keys" }`. It checks the signature over the NEP-413 payload, that `recipient` is `alpha-keys`, that the message names the account, and that the nonce has not been used. It returns a short-lived HMAC session token. The demo secret in `.env.example` is a public placeholder. A `view_access_key` check is left for a deployed account.
+- `GET /feed/:traderId` (SSE). Checks access, then streams `TradeEvent`s. It returns **403** `no viewing key` when access is missing and **401** without a session.
+- Judge mode is `DEMO_FEED=1` (the default in `.env.example`). `POST /demo/session` and `POST /demo/mint` grant a Delayed60 key in process memory, and the stream is `fixtures/feed/alpha-1.jsonl`. Set `DEMO_FEED=0` to turn those routes off. The process still has no Hyperliquid address.
+- The judge gateway reads the committed fixture. It does not poll a job and it never sees the HL address.
+- A 1Click minter that polls `/v0/status` and calls `mint_key` is not in this build. `mint_key` is on the contract for that relayer later.
 
 ```ts
 // gateway/src/types.ts (shared contract with copier and web)
@@ -112,7 +114,9 @@ export interface TradeEvent { traderId: string; seq: number; tsMs: number; coin:
 
 ## 7. Web app
 
-Pages: `/` (leaderboard with an Attested badge, linking to the explorer tx and showing `code_hash`), `/t/[id]` (PnL chart, tiers, buy), `/feed/[id]` (live or delayed trades), `/copier` (limits form plus a dry-run log), `/verify` (shows the record, WASM hash, and OutLayer attestation, with "how to verify yourself" steps). Wallet: `@hot-labs/near-connect` (https://docs.near.org/tools/near-connect).
+Pages: `/` (leaderboard with a Relayed or Attested badge, linking to the explorer tx when `NEXT_PUBLIC_PNL_TX` is set, and showing `code_hash`), `/t/[id]` (tiers, dry 1Click quote, copier transcript), `/feed/[id]` (403, then the fixture stream after the demo mint), `/verify` (relayed record, sha256 of the fixture line, and a control that flips one byte and shows NOT VERIFIED). Wallet: `@hot-labs/near-connect` (https://docs.near.org/tools/near-connect).
+
+The web app is a Next.js server build hosted on Vercel. The feed gateway stays a separate Node process. The Vercel project does not set `NEXT_PUBLIC_GATEWAY_URL`, so a remote browser does not call its own localhost. Leaderboard and verify work from the fixture. Feed 403 and unlock are the local Quickstart.
 
 ## 8. Data flows
 

@@ -97,7 +97,7 @@ Granular tasks with acceptance criteria are in [docs/TASKS.md](docs/TASKS.md); t
 ---
 
 ## Submission checklist
-- [ ] Repo **public** by Nov 14 23:59 UTC (Nov 15 02:59 MSK). Target: Fri Nov 13.
+- [ ] Repo **public** on Thu Nov 12, not Saturday night. Near Hunt lists the project only after the form is sent, and votes need the time before the deadline.
 - [ ] `LICENSE` (MIT) present.
 - [ ] README: what it is, the problem, numbered **"do X, see Y"** Quickstart, NEAR tech used, libraries, AI assistance, pre-hackathon disclosure with `pre-hackathon` and `hackathon-submission` tags and a compare link.
 - [ ] Quickstart passes from a fresh clone with **no secrets and no funds** (dry quotes, testnet).

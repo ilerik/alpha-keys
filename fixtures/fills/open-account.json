@@ -1,0 +1,14 @@
+{
+  "marginSummary": { "accountValue": "1019" },
+  "assetPositions": [
+    {
+      "type": "oneWay",
+      "position": {
+        "coin": "ETH",
+        "szi": "1",
+        "entryPx": "100",
+        "unrealizedPnl": "20"
+      }
+    }
+  ]
+}
