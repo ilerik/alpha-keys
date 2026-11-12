@@ -77,7 +77,7 @@ Both are one WASM binary with an `action` field in its input, or two projects if
 
 **3b. Feed job** (`action: "feed"`, called over the HTTPS API by the gateway)
 - Input: `{ "action":"feed", "trader_id", "tier":"Live|Delayed60", "since_ms" }`
-- Work: `feed-core::sanitize` drops fills newer than `now - delay(tier)`, replaces size with a bucket (`0.01`, `0.1`, `1`, `10`, `10+`), rounds time down to 5 seconds, and subtracts a deterministic per-subscriber jitter so a leaked stream can be told apart. The gateway and `make demo-seed` call this library. The job does too. None of them learn the address from the library.
+- Work: the live fetch is `userFillsByTime` with `startTime` = `now_ms` minus the window, the same bound as the PnL job. `feed-core::sanitize` then drops fills newer than `now - delay(tier)`, replaces size with a bucket (`0.01`, `0.1`, `1`, `10`, `10+`), rounds time down to 5 seconds, and subtracts a deterministic per-subscriber jitter so a leaked stream can be told apart. The gateway and `make demo-seed` call this library. The job does too. None of them learn the address from the library.
 - The gateway checks entitlement before calling. For defense in depth the job can re-check `has_access` itself through NEAR RPC.
 
 ## 4. Feed gateway
