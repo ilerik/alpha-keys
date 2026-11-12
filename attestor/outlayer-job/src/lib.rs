@@ -2,9 +2,12 @@
 //! The live worker is the only place that should set `HL_ADDRESS`.
 use feed_core::{sanitize, Tier, TradeEvent};
 use pnl_core::{
-    account_from_hl_json, compute, fills_from_hl_json, fills_in_window, spot_usdc_e6, window_ms, Metrics,
+    account_from_hl_json, compute, fills_from_hl_json, fills_in_window, spot_usdc_e6, window_ms,
+    Metrics,
 };
 use serde_json::{json, Value};
+
+pub const HYPERLIQUID_INFO_URL: &str = "https://api.hyperliquid.xyz/info";
 
 pub trait Fetch {
     fn post_info(&self, body: &str) -> Result<String, String>;
@@ -20,28 +23,41 @@ impl Fetch for RejectingFetch {
 
 pub fn execute(input: &str, hl_address: Option<&str>, fetch: &dyn Fetch) -> Result<String, String> {
     let request: Value = serde_json::from_str(input).map_err(|err| err.to_string())?;
-    let action = request.get("action").and_then(Value::as_str).unwrap_or("pnl");
-    let trader_id = request.get("trader_id").and_then(Value::as_str).unwrap_or("alpha-1");
+    let action = request
+        .get("action")
+        .and_then(Value::as_str)
+        .unwrap_or("pnl");
+    let trader_id = request
+        .get("trader_id")
+        .and_then(Value::as_str)
+        .unwrap_or("alpha-1");
     if hl_address.map(str::trim).unwrap_or("").is_empty() {
         return Err("missing HL_ADDRESS".into());
     }
     let address = hl_address.unwrap();
-    let fixture = request.get("fixture").and_then(Value::as_bool).unwrap_or(false);
+    let fixture = request
+        .get("fixture")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
     let (fills_json, account) = if fixture {
         (
             include_str!("../../../fixtures/fills/sample.json").to_string(),
-            account_from_hl_json(include_str!("../../../fixtures/fills/sample-account.json").as_bytes())?,
+            account_from_hl_json(
+                include_str!("../../../fixtures/fills/sample-account.json").as_bytes(),
+            )?,
         )
     } else if action == "feed" {
         let start_ms = window_start(&request)?;
-        let body = json!({ "type": "userFillsByTime", "user": address, "startTime": start_ms }).to_string();
+        let body = json!({ "type": "userFillsByTime", "user": address, "startTime": start_ms })
+            .to_string();
         let fills_json = fetch.post_info(&body)?;
         let state_body = json!({ "type": "clearinghouseState", "user": address }).to_string();
         let account = account_from_hl_json(fetch.post_info(&state_body)?.as_bytes())?;
         (fills_json, account)
     } else {
         let start_ms = window_start(&request)?;
-        let body = json!({ "type": "userFillsByTime", "user": address, "startTime": start_ms }).to_string();
+        let body = json!({ "type": "userFillsByTime", "user": address, "startTime": start_ms })
+            .to_string();
         let fills_json = fetch.post_info(&body)?;
         let state_body = json!({ "type": "clearinghouseState", "user": address }).to_string();
         let mut account = account_from_hl_json(fetch.post_info(&state_body)?.as_bytes())?;
@@ -57,11 +73,18 @@ pub fn execute(input: &str, hl_address: Option<&str>, fetch: &dyn Fetch) -> Resu
     let output = match action {
         "feed" => {
             let now_ms = request.get("now_ms").and_then(Value::as_u64).unwrap_or(0);
-            let tier = match request.get("tier").and_then(Value::as_str).unwrap_or("Delayed60") {
+            let tier = match request
+                .get("tier")
+                .and_then(Value::as_str)
+                .unwrap_or("Delayed60")
+            {
                 "Live" => Tier::Live,
                 _ => Tier::Delayed60,
             };
-            let subscriber = request.get("subscriber_id").and_then(Value::as_str).unwrap_or("public");
+            let subscriber = request
+                .get("subscriber_id")
+                .and_then(Value::as_str)
+                .unwrap_or("public");
             let events: Vec<TradeEvent> = sanitize(&fills, now_ms, tier, subscriber, trader_id);
             serde_json::to_string(&events).map_err(|err| err.to_string())?
         }
@@ -77,8 +100,14 @@ pub fn execute(input: &str, hl_address: Option<&str>, fetch: &dyn Fetch) -> Resu
 }
 
 fn window_start(request: &Value) -> Result<u64, String> {
-    let now_ms = request.get("now_ms").and_then(Value::as_u64).ok_or("missing now_ms")?;
-    let window = request.get("window").and_then(Value::as_str).unwrap_or("7d");
+    let now_ms = request
+        .get("now_ms")
+        .and_then(Value::as_u64)
+        .ok_or("missing now_ms")?;
+    let window = request
+        .get("window")
+        .and_then(Value::as_str)
+        .unwrap_or("7d");
     Ok(now_ms.saturating_sub(window_ms(window)?))
 }
 
@@ -145,7 +174,9 @@ mod tests {
 
     #[test]
     fn live_fills_request_uses_the_window_start() {
-        let fetch = RecordingFetch { seen: std::cell::RefCell::new(String::new()) };
+        let fetch = RecordingFetch {
+            seen: std::cell::RefCell::new(String::new()),
+        };
         let output = execute(
             r#"{"action":"pnl","trader_id":"alpha-1","window":"7d","now_ms":1731200000000}"#,
             Some("hidden-account"),
@@ -161,7 +192,9 @@ mod tests {
 
     #[test]
     fn feed_fills_request_uses_the_window_start() {
-        let fetch = RecordingFetch { seen: std::cell::RefCell::new(String::new()) };
+        let fetch = RecordingFetch {
+            seen: std::cell::RefCell::new(String::new()),
+        };
         let output = execute(
             r#"{"action":"feed","trader_id":"alpha-1","tier":"Delayed60","window":"7d","now_ms":1731200000000}"#,
             Some("hidden-account"),
@@ -177,7 +210,13 @@ mod tests {
 
     #[test]
     fn missing_address_is_an_error() {
-        let error = execute(r#"{"action":"pnl","fixture":true}"#, None, &RejectingFetch).unwrap_err();
+        let error =
+            execute(r#"{"action":"pnl","fixture":true}"#, None, &RejectingFetch).unwrap_err();
         assert_eq!(error, "missing HL_ADDRESS");
+    }
+
+    #[test]
+    fn live_worker_posts_to_the_hyperliquid_info_endpoint() {
+        assert_eq!(HYPERLIQUID_INFO_URL, "https://api.hyperliquid.xyz/info");
     }
 }

@@ -9,7 +9,7 @@ Times are written as UTC (MSK). This document describes the target design. Stubs
 | 1 | NEAR contract `alpha-keys` | `contracts/alpha-keys` | Rust, `near-sdk` **5.30.0**, `near-contract-standards` **5.30.0**, build with `cargo-near` **0.22.x**, sandbox tests with `near-workspaces` **0.24.x** |
 | 2 | PnL core library | `attestor/pnl-core` | Pure Rust, no I/O. Fixed-point metrics | 
 | 2b | Feed sanitizer | `attestor/feed-core` | Pure Rust. Delay, size buckets, per-subscriber jitter. Depends only on `pnl-core` |
-| 3 | TEE jobs (PnL attestor + feed) | `attestor/outlayer-job` | Rust → `wasm32-wasip2`, `outlayer` crate (SDK), deployed via `outlayer upload/deploy` |
+| 3 | TEE jobs (PnL attestor + feed) | `attestor/outlayer-job` | Rust → `wasm32-wasip2`, HTTPS via `wasi-http-client` 0.2, deployed via `outlayer upload` |
 | 4 | Feed gateway | `gateway` | TypeScript, Node 22+, Hono (HTTP + SSE), `near-api-js` **7.x** for view calls, NEP-413 verification |
 | 5 | Copier agent | `copier` | Python 3.11+ with `uv`, reuses the baseline HL fleet client (or `hyperliquid-python-sdk`); pure policy module |
 | 6 | Web app | `web` | Next.js (App Router) + TypeScript, `@hot-labs/near-connect` wallet connector, `near-api-js` 7.x, 1Click via `fetch` (or `@defuse-protocol/one-click-sdk-typescript` 0.1.x) |
@@ -71,7 +71,7 @@ Both are one WASM binary with an `action` field in its input, or two projects if
 **3a. PnL attestor** (`action: "pnl"`)
 - Input (public): `{ "action":"pnl", "trader_id":"alpha-1", "window":"7d", "now_ms": 1731000000000 }`
 - Secret (env, sealed via OutLayer secrets, access whitelisted to our project or contract): `HL_ADDRESS`
-- Work: HTTPS POST to `https://api.hyperliquid.xyz/info` with `userFillsByTime` (`startTime` = `now_ms` minus the window), `clearinghouseState`, and `spotClearinghouseState`. Equity is perps account value plus spot USDC, so a withdrawal from perps to spot is not a 100% drawdown. Then `pnl-core::compute` on the fills inside the window. This build's worker returns an error from the live fetch. `{"fixture":true}` uses the committed fills instead, which is what the tests run.
+- Work: HTTPS POST to `https://api.hyperliquid.xyz/info` with `userFillsByTime` (`startTime` = `now_ms` minus the window), `clearinghouseState`, and `spotClearinghouseState`. Equity is perps account value plus spot USDC, so a withdrawal from perps to spot is not a 100% drawdown. Then `pnl-core::compute` on the fills inside the window. The `wasm32-wasip2` binary performs those posts with `wasi-http-client` and flushes one metrics JSON line to stdout. Native tests pass a fake `Fetch`. `{"fixture":true}` uses the committed fills and does not open a socket.
 - Output (stdout JSON): `{ "pnl_usd_e6", "max_dd_bps", "sharpe_e4", "n_trades", "equity_usd_e6" }`. The output must not contain the address or the raw fills.
 - Trust: OutLayer's worker runs inside Intel TDX and binds the WASM sha256, input hash, and output. The contract only accepts the callback from `outlayer_id` and pins `attestor_code_hash`. See https://app.outlayer.ai/docs/getting-started and WORKER_ATTESTATION.md in https://github.com/out-layer/outlayer.
 
@@ -114,7 +114,7 @@ export interface TradeEvent { traderId: string; seq: number; tsMs: number; coin:
 
 ## 7. Web app
 
-Pages: `/` (leaderboard with a Relayed or Attested badge, linking to the explorer tx when `NEXT_PUBLIC_PNL_TX` is set, and showing `code_hash`), `/t/[id]` (tiers, dry 1Click quote, copier transcript), `/feed/[id]` (403, then the fixture stream after the demo mint), `/verify` (relayed record, sha256 of the fixture line, and a control that flips one byte and shows NOT VERIFIED). Wallet: `@hot-labs/near-connect` (https://docs.near.org/tools/near-connect).
+Pages: `/` (leaderboard with a Relayed or Attested badge, linking to the explorer tx when `NEXT_PUBLIC_PNL_TX` is set, and showing `code_hash`). The badge is Attested only for an `OutLayerCallback` row whose `code_hash` equals `get_config`'s pinned hash. `/t/[id]` (tiers, dry 1Click quote, copier transcript), `/feed/[id]` (403, then the fixture stream after the demo mint), `/verify` (relayed record, sha256 of the fixture line, and a control that flips one byte and shows NOT VERIFIED). Wallet: `@hot-labs/near-connect` (https://docs.near.org/tools/near-connect).
 
 The web app is a Next.js server build hosted on Vercel. The feed gateway stays a separate Node process. The Vercel project does not set `NEXT_PUBLIC_GATEWAY_URL`, so a remote browser does not call its own localhost. Leaderboard and verify work from the fixture. Feed 403 and unlock are the local Quickstart.
 

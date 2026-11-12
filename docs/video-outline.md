@@ -1,17 +1,46 @@
-# Demo video outline
+# Demo video and public handoff
 
-2-3 minutes. Record the local Quickstart. The hosted Vercel URL, once it exists, can open the leaderboard and the verify check. The feed moment is localhost.
+Record a new video. Do not commit `docs/demo.webm`. Ilya posts the X text and sends the form. One application only.
+
+After `origin/main` updates, wait until https://alpha-keys.vercel.app/ shows this footer: "Token 0 is a Delayed60 key on alpha-keys.testnet. Attested means an OutLayer callback whose code hash matches the pinned WASM." Then record.
+
+## Never show
+
+- `.env`, `HL_ADDRESS`, a private key, a seed phrase, or the trader account
+- Terminal scrollback
+- `scripts/outlayer-publish.sh` output
+- A claim that the on-screen row is a live enclave callback
+
+The badge on screen is Relayed. The numbers are the fixture: PnL 8 USD, drawdown 10 bps, code hash `relayed-demo`.
+
+## Record
+
+2-3 minutes. Leaderboard and Verify can be the hosted site. The feed moment is localhost.
 
 1. Problem. One sentence: the account stays hidden, the track record is public, the feed is a key. Show the leaderboard: Alpha One, PnL 8 USD, drawdown 10 bps, Relayed badge.
 2. Dry quote. Open Alpha One. Click **Buy key → Pay from another chain**. Show `dry: true`, an `amountOut`, and `depositAddress: null`.
-3. Locked feed. Open Feed. Click **Open feed**. Show `403 no viewing key`.
+3. Locked feed. In two terminals, from a fresh clone: `pnpm --filter gateway start`, then `pnpm --filter web dev`. Open http://localhost:3000/feed/alpha-1. Click **Open feed**. Show `403 no viewing key`.
 4. Unlock. Click **Mint demo key**. Show `Trades are streaming.` and the ETH lines.
 5. Verify. Open Verify. Click **Check record**. Show `VERIFIED` and digest `c77fa93b9c667bfefa078b647e55333a42266d4f0b2dc000a45500e0b52881d7`. Click **Flip one byte**. Show `NOT VERIFIED`.
 6. Optional, only if it is already on screen: the copier dry-run line `coin_not_allowed:DOGE` from `make demo-seed`. Do not show a live order.
 
 Say these limits out loud: the record is relayed from a fixture, the quote is dry, and the demo mint is in the local gateway.
 
-Submit today, Thu Nov 12, as soon as the GitHub repo is public. Do not wait for Saturday. Near Hunt shows the project only after the form is sent.
+Hosted pages, no login:
+
+- https://alpha-keys.vercel.app/
+- https://alpha-keys.vercel.app/t/alpha-1
+- https://alpha-keys.vercel.app/verify
+- Explorer tx: https://testnet.nearblocks.io/txns/6uDLJJ5s9URhR79Gt6P97r9p54HPdgSEWWdgEuYpyekF
+- Token 0: https://testnet.nearblocks.io/nft-token/alpha-keys.testnet/0
+
+## Go public
+
+Confirm `git ls-files` has no `.env` and `make check` prints `leak check: no address-shaped hex`. Then make https://github.com/ilerik/alpha-keys public.
+
+GitHub About text:
+
+Viewing-key NFTs for a hidden trader. A TEE is the design for attested PnL. This demo's record is relayed from a fixture, not a live enclave.
 
 ## X post (Ilya posts this himself, then submits)
 
@@ -46,4 +75,3 @@ Idea:
 Alpha Keys is a viewing-key NFT for a trader who never publishes the account. The Hyperliquid address stays off the chain. A relayed PnL record stores profit, drawdown, and Sharpe from a public fixture, and anyone can recompute them with make demo-seed. The demo gateway returns 403 until a key is minted, then it streams delayed, size-bucketed trades. The verify page hashes the fixture line and shows NOT VERIFIED after one flipped byte. 1Click quotes are dry. Judges clone the repo and follow the README with no secrets and no funds.
 
 Save the 201 body to `docs/submission-receipt.md` after the form accepts it. This file is the outline, not the receipt. The form has not been sent.
-

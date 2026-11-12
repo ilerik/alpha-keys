@@ -18,7 +18,7 @@ Read this file, then PLAN.md, docs/ARCHITECTURE.md, and the task you were given 
 
 ## Stack (see ARCHITECTURE.md §1 for versions and links)
 - Contracts: Rust, `near-sdk` 5.30, `near-contract-standards` 5.30, `cargo-near`, `near-workspaces` for sandbox tests. Testnet first.
-- TEE job: Rust → `wasm32-wasip2`, `outlayer` crate; logic lives in `attestor/pnl-core` (pure, native-testable).
+- TEE job: Rust → `wasm32-wasip2`, `wasi-http-client` for Hyperliquid; logic lives in `attestor/pnl-core` (pure, native-testable).
 - Gateway: TypeScript, Node 22+, Hono, `near-api-js` 7.x, vitest.
 - Copier: Python 3.11+, `uv`, pytest, ruff; pure `policy.py`.
 - Web: Next.js + TypeScript, `@hot-labs/near-connect`, `near-api-js` 7.x.

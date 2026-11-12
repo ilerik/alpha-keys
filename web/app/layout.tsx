@@ -30,7 +30,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </span>
           </header>
           <main>{children}</main>
-          <footer>The record is relayed from a fixture. Token 0 is a Delayed60 key on alpha-keys.testnet.</footer>
+          <footer>Token 0 is a Delayed60 key on alpha-keys.testnet. Attested means an OutLayer callback whose code hash matches the pinned WASM.</footer>
         </div>
         </LoopbackProvider>
       </body>

@@ -1,6 +1,6 @@
 # Alpha Keys: private copy-trading with attested PnL and sellable viewing keys
 
-The TEE is the design. This demo's PnL record is relayed from a fixture, not a live enclave callback.
+The TEE is the design. The leaderboard says Attested only for an OutLayer callback whose code hash matches the pinned WASM. Until that callback is stored, the visible row is relayed from a fixture.
 
 Live demo, no login: https://alpha-keys.vercel.app/
 
@@ -74,14 +74,14 @@ Not used: Shade Agents (deprecated as standalone tooling since 2026-04-19).
 
 ## Quickstart for judges
 
-No funds, no mainnet account, and no secrets. 1Click quotes are `dry: true`. The PnL record in the demo is **relayed** from a fixture (`submit_pnl`), not a live TEE callback. The contract method `request_pnl_update` is there for a later OutLayer project.
+No funds, no mainnet account, and no secrets. 1Click quotes are `dry: true`. The judge PnL row is **relayed** from a fixture (`submit_pnl`). `scripts/outlayer-publish.sh` is author-only: it publishes the worker, seals the address, and can call `request_pnl_update`. Judges do not run it.
 
-1. `git clone <repo> && cd alpha-keys && cp .env.example .env`. You see a `.env` whose filled-in values are public URLs and `DEMO_FEED=1`. Secret fields are empty.
+1. `git clone https://github.com/ilerik/alpha-keys && cd alpha-keys && cp .env.example .env`. You see a `.env` whose filled-in values are public URLs and `DEMO_FEED=1`. Secret fields are empty.
 2. `make check`. You see Rust tests, gateway tests, web tests, copier tests, and `leak check: no address-shaped hex`.
 3. `make demo-seed`. You see metrics JSON (`pnl_usd_e6` 8000000, `max_dd_bps` 10, `sharpe_e4` 108098), then JSON lines: two orders and one `coin_not_allowed:DOGE` rejection.
 4. The same metrics are what `submit_pnl` stored on `alpha-keys.testnet`. The transaction is `6uDLJJ5s9URhR79Gt6P97r9p54HPdgSEWWdgEuYpyekF`. Token `0` is a Delayed60 key. Judges do not deploy.
 5. In one terminal, `pnpm --filter gateway start`. You see `gateway listening on 8787 demo=true`.
-6. In another, `pnpm --filter web dev`, then open http://localhost:3000. You see Alpha One with PnL 8 USD, drawdown 10 bps, and a Relayed badge.
+6. In another, `pnpm --filter web dev`, then open http://localhost:3000. You see Alpha One. The badge is Relayed and the numbers are the fixture (PnL 8 USD, drawdown 10 bps) until a callback row's code hash equals the contract's pinned WASM hash. That matching callback is the only Attested badge.
 7. Open **Alpha One** and click **Buy key → Pay from another chain**. You see a dry quote for 5 Ethereum USDT into NEAR USDC: `dry` true, `amountOut` filled in, and `depositAddress` null.
 8. Open **Feed**, click **Open feed**. You see `403 no viewing key`. Click **Mint demo key**. You see `Trades are streaming.` and ETH events.
 9. Open **Verify**. You see the relayed record. Click **Check record**. You see `VERIFIED` and digest `c77fa93b9c667bfefa078b647e55333a42266d4f0b2dc000a45500e0b52881d7`. Click **Flip one byte**. You see `NOT VERIFIED`.

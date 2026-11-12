@@ -15,3 +15,7 @@ path = "src/main.rs"
 feed-core = { path = "../feed-core" }
 pnl-core = { path = "../pnl-core" }
 serde_json = "1"
+
+# HTTPS exists only in the wasm32-wasip2 worker. Native tests keep the fake Fetch.
+[target.'cfg(all(target_arch = "wasm32", target_os = "wasi"))'.dependencies]
+wasi-http-client = "0.2"
