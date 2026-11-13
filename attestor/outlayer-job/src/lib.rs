@@ -34,7 +34,10 @@ pub fn execute(input: &str, hl_address: Option<&str>, fetch: &dyn Fetch) -> Resu
     if hl_address.map(str::trim).unwrap_or("").is_empty() {
         return Err("missing HL_ADDRESS".into());
     }
-    let address = hl_address.unwrap();
+    // Hyperliquid documents addresses as lowercase hex. A checksummed (mixed
+    // case) secret is normalized so the info endpoint sees the same account.
+    let normalized = hl_address.unwrap().trim().to_ascii_lowercase();
+    let address = normalized.as_str();
     let fixture = request
         .get("fixture")
         .and_then(Value::as_bool)
@@ -93,7 +96,7 @@ pub fn execute(input: &str, hl_address: Option<&str>, fetch: &dyn Fetch) -> Resu
             serde_json::to_string(&metrics).map_err(|err| err.to_string())?
         }
     };
-    if output.contains(address) {
+    if output.to_ascii_lowercase().contains(address) {
         return Err("refusing to emit the account address".into());
     }
     Ok(output)
@@ -218,5 +221,27 @@ mod tests {
     #[test]
     fn live_worker_posts_to_the_hyperliquid_info_endpoint() {
         assert_eq!(HYPERLIQUID_INFO_URL, "https://api.hyperliquid.xyz/info");
+    }
+
+    #[test]
+    fn checksummed_address_is_sent_lowercase_and_never_emitted() {
+        let fetch = RecordingFetch {
+            seen: std::cell::RefCell::new(String::new()),
+        };
+        let mixed = format!("0x{}", "AbCdEf0123".repeat(4));
+        let mixed = mixed.as_str();
+        let output = execute(
+            r#"{"action":"pnl","trader_id":"alpha-1","window":"7d","now_ms":1731200000000}"#,
+            Some(mixed),
+            &fetch,
+        )
+        .unwrap();
+        let seen = fetch.seen.borrow();
+        assert_eq!(seen.lines().count(), 3);
+        for line in seen.lines() {
+            let body: Value = serde_json::from_str(line).unwrap();
+            assert_eq!(body["user"], mixed.to_ascii_lowercase());
+        }
+        assert!(!output.to_ascii_lowercase().contains(&mixed.to_ascii_lowercase()));
     }
 }

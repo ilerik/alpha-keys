@@ -1,4 +1,5 @@
 import { DEMO_TRADER } from "../../lib/demo";
+import { AttestedRecord } from "./attested-record";
 import { FlipByte } from "./flip";
 
 export default function VerifyPage() {
@@ -8,9 +9,9 @@ export default function VerifyPage() {
   return (
     <>
       <h1 className="manifesto">Verify</h1>
+      <AttestedRecord />
       <p>
-        This record is <strong>relayed</strong>. The judge path stores the same numbers from the fixture through <code>submit_pnl</code>.
-        There is no testnet contract until <code>scripts/deploy-testnet.sh</code> is run with a key that stays in the environment.
+        The fixture record below is <strong>relayed</strong>. The judge path stores the same numbers from the fixture through <code>submit_pnl</code>, so anyone can recompute them.
       </p>
       {contractId ? (
         <p>

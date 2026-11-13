@@ -18,9 +18,8 @@ DEPOSIT="${OUTLAYER_DEPOSIT:-0.5 NEAR}"
 export OUTLAYER_NETWORK="${OUTLAYER_NETWORK:-testnet}"
 export ROOT ACCOUNT PROFILE
 
-WASM="${CARGO_TARGET_DIR:-$ROOT/target}/wasm32-wasip2/release/outlayer-job.wasm"
-echo "Building the PnL worker."
-cargo build -p outlayer-job --target wasm32-wasip2 --release --manifest-path "$ROOT/Cargo.toml"
+echo "Building the PnL worker (scripts/build-worker.sh, pinned toolchain, remapped paths)."
+WASM="$("$ROOT/scripts/build-worker.sh" | tail -n 1)"
 if [[ ! -f "$WASM" ]]; then
   echo "Wasm was not found after the build." >&2
   exit 1
@@ -67,6 +66,22 @@ if ! command -v outlayer >/dev/null 2>&1; then
   echo "Install outlayer-cli and log in on testnet, then retry. The address was not printed." >&2
   exit 2
 fi
+
+# outlayer-cli signs with an ed25519 key only, so its login can be a different
+# account from the contract owner (alpha-keys.testnet holds an ml-dsa-65 key).
+# The secret row belongs to the outlayer login, so secrets_account_id must be
+# that account. The run is admitted by the SIGNER of request_pnl_update.
+SECRETS_OWNER="${OUTLAYER_ACCOUNT_ID:-$(outlayer whoami 2>/dev/null | awk '/^Account:/ {print $2}')}"
+if [[ -z "$SECRETS_OWNER" ]]; then
+  echo "outlayer is not logged in. Run: outlayer login testnet" >&2
+  exit 2
+fi
+if ! outlayer whoami 2>/dev/null | grep -q '^Network: *testnet'; then
+  echo "outlayer is not on testnet. Run: outlayer login testnet (or export OUTLAYER_NETWORK=testnet)" >&2
+  exit 2
+fi
+echo "OutLayer login ${SECRETS_OWNER}. Secrets are stored under that account."
+export SECRETS_OWNER
 
 echo "Uploading the wasm. The indexer can take a minute before the URL serves it."
 UPLOAD="$(outlayer upload "$WASM" 2>&1)"
@@ -146,10 +161,10 @@ call() {
 }
 
 call set_attestor_code_hash "$(printf '{"code_hash":"%s"}' "$HASH")" '0 NEAR' '30.0 Tgas'
-call set_attestor_source "$(printf '{"wasm_url":"%s","secrets_profile":"%s","secrets_account_id":"%s"}' "$URL" "$PROFILE" "$ACCOUNT")" '0 NEAR' '30.0 Tgas'
+call set_attestor_source "$(printf '{"wasm_url":"%s","secrets_profile":"%s","secrets_account_id":"%s"}' "$URL" "$PROFILE" "$SECRETS_OWNER")" '0 NEAR' '30.0 Tgas'
 echo "Pinned code hash ${HASH}"
 echo "Pinned wasm url ${URL}"
-echo "Secrets profile ${PROFILE} for ${ACCOUNT}"
+echo "Secrets profile ${PROFILE} owned by ${SECRETS_OWNER}, readable by ${ACCOUNT}"
 
 if [[ "$REQUEST" != 1 ]]; then
   echo "OUTLAYER_REQUEST is not 1, so request_pnl_update was not called."

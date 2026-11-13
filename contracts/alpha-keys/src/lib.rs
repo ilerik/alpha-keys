@@ -157,6 +157,12 @@ trait ExtSelf {
 }
 
 const CALLBACK_GAS: Gas = Gas::from_tgas(40);
+/// Floor for `outlayer.request_execution`; it also gets the unused gas.
+const OUTLAYER_MIN_GAS: Gas = Gas::from_tgas(100);
+/// How far `now_ms` may sit from the block time.
+const MAX_CLOCK_SKEW_MS: u64 = 600_000;
+/// The least prepaid gas `request_pnl_update` accepts.
+const MIN_REQUEST_GAS: Gas = Gas::from_tgas(200);
 
 #[near]
 impl AlphaKeys {
@@ -399,6 +405,9 @@ impl AlphaKeys {
     pub fn request_pnl_update(&mut self, trader_id: TraderId, window: String, now_ms: u64) -> Promise {
         require!(self.traders.get(&trader_id).is_some(), "unknown trader");
         require!(!self.attestor_wasm_url.is_empty(), "attestor wasm url not set");
+        // The window ends now. A caller may not pick an older, better week.
+        let block_ms = env::block_timestamp() / 1_000_000;
+        require!(now_ms.abs_diff(block_ms) <= MAX_CLOCK_SKEW_MS, "now_ms must be within 10 minutes of the block time");
         let input = near_sdk::serde_json::json!({
             "action": "pnl",
             "trader_id": trader_id,
@@ -428,15 +437,19 @@ impl AlphaKeys {
                 "account_id": self.secrets_account_id,
             }))
         };
-        let prepaid = env::prepaid_gas();
-        let call_gas = prepaid.saturating_sub(CALLBACK_GAS).saturating_sub(Gas::from_tgas(5));
+        // OutLayer gets a fixed floor plus every unused gas unit. Reserving
+        // `prepaid - callback - 5 Tgas` as static gas left no room for the two
+        // promises this call creates, so the runtime refused it (GasExceeded).
+        require!(env::prepaid_gas() >= MIN_REQUEST_GAS, "attach at least 200 Tgas");
         ext_outlayer::ext(self.outlayer_id.clone())
             .with_attached_deposit(env::attached_deposit())
-            .with_static_gas(call_gas)
+            .with_static_gas(OUTLAYER_MIN_GAS)
+            .with_unused_gas_weight(1)
             .request_execution(source, Some(limits), Some(input), secrets, Some("Text".into()), Some(env::predecessor_account_id()), None)
             .then(
                 ext_self::ext(env::current_account_id())
                     .with_static_gas(CALLBACK_GAS)
+                    .with_unused_gas_weight(0)
                     .on_pnl_result(trader_id, window, input_hash, code_hash),
             )
     }
@@ -1020,5 +1033,73 @@ mod tests {
         let mut contract = ctx("owner.testnet", 0, 1);
         as_pred("buyer.testnet", 0, 9);
         contract.on_pnl_result("alpha-1".into(), "7d".into(), "in".into(), "hash-1".into(), Ok(None));
+    }
+
+    fn ready_for_request(contract: &mut AlphaKeys) {
+        register(contract, "alpha-1", 10);
+        as_pred("owner.testnet", 0, 2);
+        contract.set_attestor_code_hash("hash-1".into());
+        contract.set_attestor_source(
+            "https://test.fastfs.io/owner.testnet/outlayer.testnet/hash-1.wasm".into(),
+            "pnl".into(),
+            account("owner.testnet"),
+        );
+    }
+
+    #[test]
+    fn request_fits_in_300_tgas() {
+        let mut contract = ctx("owner.testnet", 0, 1);
+        ready_for_request(&mut contract);
+        as_pred("owner.testnet", ONE_NEAR / 2, 1_731_200_000_000 * 1_000_000);
+        let _ = contract.request_pnl_update("alpha-1".into(), "7d".into(), 1_731_200_000_000);
+        assert!(env::used_gas() < env::prepaid_gas());
+    }
+
+    #[test]
+    #[should_panic(expected = "now_ms must be within 10 minutes")]
+    fn request_refuses_a_stale_window() {
+        let mut contract = ctx("owner.testnet", 0, 1);
+        ready_for_request(&mut contract);
+        as_pred("owner.testnet", ONE_NEAR / 2, 1_731_200_000_000 * 1_000_000);
+        let _ = contract.request_pnl_update("alpha-1".into(), "7d".into(), 1_731_200_000_000 - 86_400_000);
+    }
+
+    #[test]
+    #[should_panic(expected = "attach at least 200 Tgas")]
+    fn request_refuses_too_little_gas() {
+        let mut contract = ctx("owner.testnet", 0, 1);
+        ready_for_request(&mut contract);
+        let mut builder = VMContextBuilder::new();
+        builder
+            .current_account_id(account("alpha.testnet"))
+            .signer_account_id(account("owner.testnet"))
+            .predecessor_account_id(account("owner.testnet"))
+            .attached_deposit(NearToken::from_yoctonear(ONE_NEAR / 2))
+            .block_timestamp(1_731_200_000_000 * 1_000_000)
+            .storage_usage(env::storage_usage())
+            .prepaid_gas(Gas::from_tgas(100));
+        testing_env!(builder.build());
+        let _ = contract.request_pnl_update("alpha-1".into(), "7d".into(), 1_731_200_000_000);
+    }
+
+    #[test]
+    fn callback_record_reads_as_outlayer_callback_json() {
+        let mut contract = ctx("owner.testnet", 0, 1);
+        register(&mut contract, "alpha-1", 10);
+        as_pred("alpha.testnet", 0, 9);
+        contract.on_pnl_result(
+            "alpha-1".into(),
+            "7d".into(),
+            "in".into(),
+            "hash-1".into(),
+            Ok(Some(
+                "{\"pnl_usd_e6\":-3,\"max_dd_bps\":500,\"sharpe_e4\":-1,\"n_trades\":12,\"equity_usd_e6\":9}\n".into(),
+            )),
+        );
+        let row = &contract.get_pnl_history("alpha-1".into(), 0, 10)[0];
+        let json = serde_json::to_value(row).unwrap();
+        assert!(json["source"].get("OutLayerCallback").is_some());
+        assert_eq!(json["code_hash"], "hash-1");
+        assert_eq!(contract.get_config().2, "hash-1");
     }
 }

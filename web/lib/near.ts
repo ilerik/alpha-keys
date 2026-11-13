@@ -24,6 +24,6 @@ export async function viewPnlHistory(rpcUrl: string, contractId: string, traderI
   return providerFor(rpcUrl).callFunction({
     contractId,
     method: "get_pnl_history",
-    args: { trader_id: traderId, from: 0, limit: 20 },
+    args: { trader_id: traderId, from: 0, limit: 200 },
   });
 }

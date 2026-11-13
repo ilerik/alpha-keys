@@ -5,11 +5,11 @@ const PIN = "abc123";
 
 const callback = {
   window: "7d",
-  pnl_usd_e6: -4_200_000,
-  max_dd_bps: 745,
+  pnl_usd_e6: -3_000_000,
+  max_dd_bps: 500,
   sharpe_e4: 0,
-  n_trades: 57,
-  equity_usd_e6: 318_000_000,
+  n_trades: 12,
+  equity_usd_e6: 1_000_000_000,
   code_hash: PIN,
   input_hash: "input",
   source: { OutLayerCallback: { request_id: null } },
@@ -39,8 +39,8 @@ describe("attestation badge", () => {
   it("uses the last matching callback and leaves earlier relayed rows in place", () => {
     const latest = attestedLatest([relayed, callback], PIN);
     expect(latest?.source).toBe("callback");
-    expect(latest?.pnlUsdE6).toBe(-4_200_000);
+    expect(latest?.pnlUsdE6).toBe(-3_000_000);
     expect(latest?.codeHash).toBe(PIN);
-    expect(latest?.nTrades).toBe(57);
+    expect(latest?.nTrades).toBe(12);
   });
 });
