@@ -9,29 +9,29 @@ After `origin/main` updates, wait until https://alpha-keys.vercel.app/ shows thi
 - `.env`, `HL_ADDRESS`, a private key, a seed phrase, or the trader account
 - Terminal scrollback
 - `scripts/outlayer-publish.sh` output
-- A claim that the on-screen row is a live enclave callback
 
-The badge on screen is Relayed. The numbers are the fixture: PnL 8 USD, drawdown 10 bps, code hash `relayed-demo`.
+The badge on screen is Attested. The code hash is `cb9c3130c6858cf4b460950281cff3468eabc0d79f1652fb05061c7fe41978dd`. The live 7d row is about 27.92 USD PnL, 10000 bps drawdown, Sharpe 0.00, and 114 trades. Current equity is dust, and the curve counts a withdrawal as drawdown. Do not say "top trader".
 
 ## Record
 
 2-3 minutes. Leaderboard and Verify can be the hosted site. The feed moment is localhost.
 
-1. Problem. One sentence: the account stays hidden, the track record is public, the feed is a key. Show the leaderboard: Alpha One, PnL 8 USD, drawdown 10 bps, Relayed badge.
+1. Problem. One sentence: the account stays hidden, the track record is public, the feed is a key. Show the leaderboard: Alpha One, Attested badge, code hash `cb9c3130c685`, about 27.92 USD PnL, 10000 bps drawdown.
 2. Dry quote. Open Alpha One. Click **Buy key → Pay from another chain**. Show `dry: true`, an `amountOut`, and `depositAddress: null`.
 3. Locked feed. In two terminals, from a fresh clone: `pnpm --filter gateway start`, then `pnpm --filter web dev`. Open http://localhost:3000/feed/alpha-1. Click **Open feed**. Show `403 no viewing key`.
 4. Unlock. Click **Mint demo key**. Show `Trades are streaming.` and the ETH lines.
 5. Verify. Open Verify. Click **Check record**. Show `VERIFIED` and digest `c77fa93b9c667bfefa078b647e55333a42266d4f0b2dc000a45500e0b52881d7`. Click **Flip one byte**. Show `NOT VERIFIED`.
 6. Optional, only if it is already on screen: the copier dry-run line `coin_not_allowed:DOGE` from `make demo-seed`. Do not show a live order.
 
-Say these limits out loud: the record is relayed from a fixture, the quote is dry, and the demo mint is in the local gateway.
+Say these limits out loud: the PnL row is an OutLayer callback, the 10000 bps drawdown includes withdrawals, the quote is dry, and the demo mint is in the local gateway.
 
 Hosted pages, no login:
 
 - https://alpha-keys.vercel.app/
 - https://alpha-keys.vercel.app/t/alpha-1
 - https://alpha-keys.vercel.app/verify
-- Explorer tx: https://testnet.nearblocks.io/txns/6uDLJJ5s9URhR79Gt6P97r9p54HPdgSEWWdgEuYpyekF
+- Attested tx: https://testnet.nearblocks.io/txns/ECyHsbAmWfuo19Hp8GFdUn5C2wNpxri97ABrHJzihapa
+- Fixture tx: https://testnet.nearblocks.io/txns/6uDLJJ5s9URhR79Gt6P97r9p54HPdgSEWWdgEuYpyekF
 - Token 0: https://testnet.nearblocks.io/nft-token/alpha-keys.testnet/0
 
 ## Go public
@@ -40,14 +40,16 @@ Confirm `git ls-files` has no `.env` and `make check` prints `leak check: no add
 
 GitHub About text:
 
-Viewing-key NFTs for a hidden trader. A TEE is the design for attested PnL. This demo's record is relayed from a fixture, not a live enclave.
+Viewing-key NFTs for a hidden trader. PnL is computed in an OutLayer TEE (Intel TDX) and attested on NEAR; the account stays sealed.
 
 ## X post (Ilya posts this himself, then submits)
 
 ```
 built at NEAR HACKATHON
 
-Alpha Keys: a viewing-key NFT for a trader who never publishes the account. The PnL is on NEAR. The feed stays locked until you hold the key. Flip one byte of the record and it shows NOT VERIFIED.
+Alpha Keys: a viewing-key NFT for a trader who never publishes the account. PnL is computed inside a TEE and attested on NEAR. The feed stays locked until you hold the key.
+
+https://alpha-keys.vercel.app
 
 @NEARProtocol #NEARHackathon
 ```

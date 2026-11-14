@@ -41,10 +41,10 @@ export default function VerifyPage() {
       <pre>make demo-seed</pre>
       <p>You see the same pnl, drawdown, and Sharpe printed as JSON, then the delayed events.</p>
       <h2>Reproduce a WASM hash</h2>
-      <pre>sha256sum target/wasm32-wasip2/release/outlayer-job.wasm</pre>
+      <pre>./scripts/build-worker.sh</pre>
       <p>
-        Compare that digest with <code>attestor_code_hash</code> on the contract after <code>set_attestor_code_hash</code>.
-        The relayed demo hash is the label <code>relayed-demo</code>, not a WASM digest.
+        You see <code>wasm sha256 cb9c3130c6858cf4b460950281cff3468eabc0d79f1652fb05061c7fe41978dd</code>.
+        That is the third field of <code>get_config</code>. The relayed fixture hash is the label <code>relayed-demo</code>, not a WASM digest.
       </p>
     </>
   );

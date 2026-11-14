@@ -1,6 +1,6 @@
 # Alpha Keys: private copy-trading with attested PnL and sellable viewing keys
 
-The TEE is the design. The leaderboard says Attested only for an OutLayer callback whose code hash matches the pinned WASM. Until that callback is stored, the visible row is relayed from a fixture.
+The PnL row for Alpha One is live TEE output. An OutLayer worker in Intel TDX holds the Hyperliquid address as a sealed secret, computes 7d PnL, drawdown, and Sharpe, and returns them to `alpha-keys.testnet` through yield/resume. The contract stores the row only if its code hash equals the pinned WASM (`cb9c3130c6858cf4b460950281cff3468eabc0d79f1652fb05061c7fe41978dd`). Transaction: https://testnet.nearblocks.io/txns/ECyHsbAmWfuo19Hp8GFdUn5C2wNpxri97ABrHJzihapa. The fixture row from the first deploy stays on chain for the offline Quickstart.
 
 Live demo, no login: https://alpha-keys.vercel.app/
 
@@ -70,21 +70,22 @@ Not used: Shade Agents (deprecated as standalone tooling since 2026-04-19).
 
 `nfts`, `privacy`, `defi`.
 
-`security` stays off this submission. The published record is relayed, not a live enclave proof. `agents` stays off: the copier dry-run does not spend.
+`security` stays off this submission: the attestation is live, but the viewing key is an app-layer right, not an audited security product. `agents` stays off: the copier dry-run does not spend.
 
 ## Quickstart for judges
 
-No funds, no mainnet account, and no secrets. 1Click quotes are `dry: true`. The judge PnL row is **relayed** from a fixture (`submit_pnl`). `scripts/outlayer-publish.sh` is author-only: it publishes the worker, seals the address, and can call `request_pnl_update`. Judges do not run it.
+No funds, no mainnet account, and no secrets. 1Click quotes are `dry: true`. The leaderboard row is a live OutLayer callback. The fixture row (`submit_pnl`) is what `make demo-seed` reproduces offline. `scripts/outlayer-publish.sh` is author-only. Judges do not run it.
 
 1. `git clone https://github.com/ilerik/alpha-keys && cd alpha-keys && cp .env.example .env`. You see a `.env` whose filled-in values are public URLs and `DEMO_FEED=1`. Secret fields are empty.
 2. `make check`. You see Rust tests, gateway tests, web tests, copier tests, and `leak check: no address-shaped hex`.
 3. `make demo-seed`. You see metrics JSON (`pnl_usd_e6` 8000000, `max_dd_bps` 10, `sharpe_e4` 108098), then JSON lines: two orders and one `coin_not_allowed:DOGE` rejection.
 4. The same metrics are what `submit_pnl` stored on `alpha-keys.testnet`. The transaction is `6uDLJJ5s9URhR79Gt6P97r9p54HPdgSEWWdgEuYpyekF`. Token `0` is a Delayed60 key. Judges do not deploy.
 5. In one terminal, `pnpm --filter gateway start`. You see `gateway listening on 8787 demo=true`.
-6. In another, `pnpm --filter web dev`, then open http://localhost:3000. You see Alpha One. The badge is Relayed and the numbers are the fixture (PnL 8 USD, drawdown 10 bps) until a callback row's code hash equals the contract's pinned WASM hash. That matching callback is the only Attested badge.
+6. In another, `pnpm --filter web dev`, then open http://localhost:3000. You see Alpha One with the **Attested** badge and code hash `cb9c3130c6858cf4b460950281cff3468eabc0d79f1652fb05061c7fe41978dd`. That badge appears only for an OutLayer callback whose code hash equals `get_config`'s pinned hash. The live 7d row is about 27.92 USD PnL, 10000 bps drawdown, Sharpe 0.00, and 114 trades.
 7. Open **Alpha One** and click **Buy key → Pay from another chain**. You see a dry quote for 5 Ethereum USDT into NEAR USDC: `dry` true, `amountOut` filled in, and `depositAddress` null.
 8. Open **Feed**, click **Open feed**. You see `403 no viewing key`. Click **Mint demo key**. You see `Trades are streaming.` and ETH events.
-9. Open **Verify**. You see the relayed record. Click **Check record**. You see `VERIFIED` and digest `c77fa93b9c667bfefa078b647e55333a42266d4f0b2dc000a45500e0b52881d7`. Click **Flip one byte**. You see `NOT VERIFIED`.
+9. Open **Verify**. You see the attested callback above the relayed fixture. Click **Check record**. You see `VERIFIED` and digest `c77fa93b9c667bfefa078b647e55333a42266d4f0b2dc000a45500e0b52881d7`. Click **Flip one byte**. You see `NOT VERIFIED`.
+10. Reproduce the worker hash: `./scripts/build-worker.sh`. You see `wasm sha256 cb9c3130c6858cf4b460950281cff3468eabc0d79f1652fb05061c7fe41978dd`, the same value as the third field of `get_config` on `alpha-keys.testnet`.
 
 Hosted demo: https://alpha-keys.vercel.app/ - kept up until at least Nov 25, 2026. Leaderboard, Alpha One, and Verify load with no login. The feed stays on localhost, so the public site does not call it until Connect is clicked. Demo video: _TBD (X post)._
 
@@ -103,7 +104,7 @@ Libraries are listed per package (`Cargo.toml`, `package.json`, `pyproject.toml`
 - Hyperliquid trades are public on its order book. A determined key holder could try to fingerprint the hidden account by matching copied trades to public fills. Delay, size jitter, and tiering reduce this risk but don't remove it. See [docs/ARCHITECTURE.md#threat-model](docs/ARCHITECTURE.md#threat-model).
 - The viewing key is an **app-layer** access right enforced by the TEE job. It isn't a native Confidential Intents viewing key; none is public yet.
 - NEAR Intents has no testnet. The demo uses `dry: true` quotes. No live 1Click payment is part of the judge path.
-- The PnL record on `alpha-keys.testnet` is relayed from a fixture (`submit_pnl`, tx `6uDLJJ5s9URhR79Gt6P97r9p54HPdgSEWWdgEuYpyekF`). It is not a live enclave callback.
+- The leaderboard row is the OutLayer callback in `ECyHsbAmWfuo19Hp8GFdUn5C2wNpxri97ABrHJzihapa`. Current equity is about 0.001562 USD (perps value 0, spot USDC dust). The drawdown curve does not separate withdrawals, so that row shows 10000 bps and Sharpe 0. The fixture row (`submit_pnl`, tx `6uDLJJ5s9URhR79Gt6P97r9p54HPdgSEWWdgEuYpyekF`) is what `make demo-seed` reproduces.
 - Token `0` is a Delayed60 NEP-171 key owned by `alpha-keys.testnet`. The feed's Mint demo key button is still a gateway session, not that on-chain mint.
 - The hosted site does not run the feed gateway. A remote visitor sees the leaderboard and the verify check. The 403-then-stream moment is localhost and the video.
 

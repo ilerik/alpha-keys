@@ -114,9 +114,9 @@ export interface TradeEvent { traderId: string; seq: number; tsMs: number; coin:
 
 ## 7. Web app
 
-Pages: `/` (leaderboard with a Relayed or Attested badge, linking to the explorer tx when `NEXT_PUBLIC_PNL_TX` is set, and showing `code_hash`). The badge is Attested only for an `OutLayerCallback` row whose `code_hash` equals `get_config`'s pinned hash. `/t/[id]` (tiers, dry 1Click quote, copier transcript), `/feed/[id]` (403, then the fixture stream after the demo mint), `/verify` (relayed record, sha256 of the fixture line, and a control that flips one byte and shows NOT VERIFIED). Wallet: `@hot-labs/near-connect` (https://docs.near.org/tools/near-connect).
+Pages: `/` (leaderboard with a Relayed or Attested badge, linking to the explorer tx when `NEXT_PUBLIC_PNL_TX` is set, and showing `code_hash`). The badge is Attested only for an `OutLayerCallback` row whose `code_hash` equals `get_config`'s pinned hash. `/t/[id]` (tiers, dry 1Click quote, copier transcript), `/feed/[id]` (403, then the fixture stream after the demo mint), `/verify` (the attested callback when the pin matches, then the relayed fixture, its sha256, and a control that flips one byte and shows NOT VERIFIED). Wallet: `@hot-labs/near-connect` (https://docs.near.org/tools/near-connect).
 
-The web app is a Next.js server build hosted on Vercel. The feed gateway stays a separate Node process. The Vercel project does not set `NEXT_PUBLIC_GATEWAY_URL`, so a remote browser does not call its own localhost. Leaderboard and verify work from the fixture. Feed 403 and unlock are the local Quickstart.
+The web app is a Next.js server build hosted on Vercel. The feed gateway stays a separate Node process. The Vercel project does not set `NEXT_PUBLIC_GATEWAY_URL`, so a remote browser does not call its own localhost. The leaderboard and the attested verify panel read `get_pnl_history` and `get_config`. The flip-one-byte check uses the fixture. Feed 403 and unlock are the local Quickstart.
 
 ## 8. Data flows
 

@@ -17,7 +17,7 @@ Checked Nov 13, 2026 against main 8a04448. Deadline: Nov 14 23:59 UTC (Nov 15 04
 
 ## Your steps, in order
 
-0. [ ] NEW: make the TEE live first. Follow TEE-RUNBOOK.md (branch tee-live, 4 testnet transactions you sign), then apply POST-ATTESTATION-TEXT.md. Then continue below.
+0. [x] TEE is live. Callback tx `ECyHsbAmWfuo19Hp8GFdUn5C2wNpxri97ABrHJzihapa`, worker hash `cb9c3130c6858cf4b460950281cff3468eabc0d79f1652fb05061c7fe41978dd`. Docs updated. Repo is not public yet.
 
 1. [ ] Optional but recommended: run `make check` on your machine once. The contract crate (alpha-keys, near-workspaces sandbox) cannot build on the box (no make/pkg-config, apt mirror down).
 2. [ ] Fix the GitHub About text (it still says "TEE-attested"):

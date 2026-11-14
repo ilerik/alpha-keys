@@ -86,7 +86,7 @@ export SECRETS_OWNER
 echo "Uploading the wasm. The indexer can take a minute before the URL serves it."
 UPLOAD="$(outlayer upload "$WASM" 2>&1)"
 printf '%s\n' "$UPLOAD"
-URL="$(printf '%s\n' "$UPLOAD" | python3 -c 'import re,sys; text=sys.stdin.read(); match=re.search(r"https://[^[:space:]]+\.wasm", text); print(match.group(0) if match else "")')"
+URL="$(printf '%s\n' "$UPLOAD" | python3 -c 'import re,sys; text=sys.stdin.read(); match=re.search(r"https://\S+\.wasm", text); print(match.group(0) if match else "")')"
 if [[ -z "$URL" ]]; then
   echo "Upload did not print a wasm URL. Nothing was pinned." >&2
   exit 1

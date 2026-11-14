@@ -42,7 +42,9 @@ export function AttestedRecord() {
       <p>pinned hash <code>{pinnedHash}</code></p>
       <p>input hash <code>{record.inputHash}</code></p>
       <p>
-        <a href={`https://testnet.nearblocks.io/address/${contractId}`}>Contract transactions on the explorer</a>
+        <a href="https://testnet.nearblocks.io/txns/ECyHsbAmWfuo19Hp8GFdUn5C2wNpxri97ABrHJzihapa">Callback transaction</a>
+        {" · "}
+        <a href={`https://testnet.nearblocks.io/address/${contractId}`}>Contract on the explorer</a>
       </p>
       <h2>Relayed fixture record</h2>
     </section>
