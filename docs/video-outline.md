@@ -70,10 +70,10 @@ Ilya sends one application at https://nearhackathon.com/#apply. Do not send a se
 - consent: true
 - no `website` field
 
-`security` stays off. The published record is relayed. `agents` stays off. The copier dry-run does not spend.
+`security` stays off. The viewing key is an app-layer right, not an audited security product. `agents` stays off. The copier dry-run does not spend.
 
 Idea:
 
-Alpha Keys is a viewing-key NFT for a trader who never publishes the account. The Hyperliquid address stays off the chain. A relayed PnL record stores profit, drawdown, and Sharpe from a public fixture, and anyone can recompute them with make demo-seed. The demo gateway returns 403 until a key is minted, then it streams delayed, size-bucketed trades. The verify page hashes the fixture line and shows NOT VERIFIED after one flipped byte. 1Click quotes are dry. Judges clone the repo and follow the README with no secrets and no funds.
+Alpha Keys is a viewing-key NFT for a trader who never publishes the account. The Hyperliquid address stays off the chain. An OutLayer worker in Intel TDX holds the address as a sealed secret, fetches fills and equity from Hyperliquid, and returns only 7d profit, drawdown, and Sharpe to a NEAR contract through yield/resume. The contract stores the row only if the worker's code hash equals the pinned WASM, and the build is reproducible, so anyone can rebuild the wasm and compare hashes. The live leaderboard on alpha-keys.testnet shows that attested row. Followers buy a NEP-171 Viewing Key (royalty on resale) and see a NEAR Intents 1Click dry quote for paying from another chain. The demo gateway returns 403 until a key is minted, then streams delayed, size-bucketed trades. The verify page shows the attested record and a relayed fixture that anyone can recompute with make demo-seed; flip one byte and it shows NOT VERIFIED. Hosted demo: https://alpha-keys.vercel.app. The feed unlock runs on localhost, as the README says. Judges follow the README with no secrets and no funds.
 
 Save the 201 body to `docs/submission-receipt.md` after the form accepts it. This file is the outline, not the receipt. The form has not been sent.

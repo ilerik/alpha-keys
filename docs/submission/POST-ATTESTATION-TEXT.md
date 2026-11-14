@@ -55,7 +55,7 @@ Alpha Keys is a viewing-key NFT for a trader who never publishes the account. Th
 - Recapture the leaderboard shot: ATTESTED badge, real numbers, code hash. The RELAYED badge in v2 is then wrong.
 - Final slide caveat, replace "PnL shown is a sample record on NEAR testnet. Live attested feeds are coming next." with "PnL attested by an OutLayer TEE worker on NEAR testnet. Feed unlock shown from the local demo gateway."
 - Optional new 4 s beat before the pitch: the Verify page attested panel with code hash = pinned hash. Voice: "The numbers come from code running in a secure enclave. Anyone can check the hash."
-- The real 7d PnL is a small loss. If you keep it on screen, the voice line "a trader you can verify" still works; avoid "top trader" wording.
+- The live 7d row is about 27.92 USD PnL, 10000 bps drawdown, Sharpe 0.00, and 114 trades. Equity is dust, and the curve counts a withdrawal as drawdown. The voice line "a trader you can verify" still works. Do not say "top trader".
 
 ## docs/video-outline.md
 

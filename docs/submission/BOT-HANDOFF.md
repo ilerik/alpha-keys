@@ -13,7 +13,7 @@ Keep the name **Alpha Keys**. A search on 14 Nov 2026 found no NEAR, copy-tradin
 - The fixture row stays for `make demo-seed`. Flip-one-byte still uses that fixture.
 - Tracks: `nfts`, `privacy`, `defi`. Leave `security` and `agents` off.
 - One form only, at https://nearhackathon.com/#apply. Never fill `website`. `demoUrl` is the X post, not the Vercel URL.
-- The idea paragraph at the bottom of `docs/video-outline.md` is stale. Use the idea in `docs/submission/POST-ATTESTATION-TEXT.md`.
+- The idea paragraph in `docs/video-outline.md` matches the live callback. Use that text on the form.
 
 ## What you do
 
