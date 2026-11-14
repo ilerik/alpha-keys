@@ -87,7 +87,7 @@ No funds, no mainnet account, and no secrets. 1Click quotes are `dry: true`. The
 9. Open **Verify**. You see the attested callback above the relayed fixture. Click **Check record**. You see `VERIFIED` and digest `c77fa93b9c667bfefa078b647e55333a42266d4f0b2dc000a45500e0b52881d7`. Click **Flip one byte**. You see `NOT VERIFIED`.
 10. Reproduce the worker hash: `./scripts/build-worker.sh`. You see `wasm sha256 cb9c3130c6858cf4b460950281cff3468eabc0d79f1652fb05061c7fe41978dd`, the same value as the third field of `get_config` on `alpha-keys.testnet`.
 
-Hosted demo: https://alpha-keys.vercel.app/ - kept up until at least Nov 25, 2026. Leaderboard, Alpha One, and Verify load with no login. The feed stays on localhost, so the public site does not call it until Connect is clicked. Demo video: _TBD (X post)._
+Hosted demo: https://alpha-keys.vercel.app/ - kept up until at least Nov 25, 2026. Leaderboard, Alpha One, and Verify load with no login. The feed stays on localhost, so the public site does not call it until Connect is clicked. Demo video: [X post](https://x.com/Eriklintsev/status/2121572639697252371)
 
 ## Pre-hackathon code disclosure
 
